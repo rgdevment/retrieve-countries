@@ -3,6 +3,10 @@ import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { HeaderResolver, I18nModule } from 'nestjs-i18n';
+import { CommonModule } from './common/common.module';
+import { CountriesModule } from './modules/countries/countries.module';
+import { CitiesModule } from './modules/cities/cities.module';
+import { StatesModule } from './modules/states/states.module';
 
 @Module({
   imports: [
@@ -25,6 +29,10 @@ import { HeaderResolver, I18nModule } from 'nestjs-i18n';
       },
       resolvers: [new HeaderResolver([])],
     }),
+    CommonModule,
+    CountriesModule,
+    CitiesModule,
+    StatesModule,
   ],
   controllers: [],
   providers: [],
