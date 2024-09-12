@@ -82,9 +82,9 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@v3
         with:
           args: >
-            -Dsonar.projectKey=${{ secrets.SONAR_KEY_IC }}
+            -Dsonar.projectKey=${{ secrets.SONAR_KEY_RC }}
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
             -Dsonar.sources=.
             -Dsonar.host.url=https://sonarcloud.io
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_IC }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_RC }}
