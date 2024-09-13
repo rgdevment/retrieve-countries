@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { CountriesController } from './countries.controller';
 import { CountriesService } from './countries.service';
-import { CommonModule } from '../../common/common.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Country, CountrySchema } from '../../common/schemas/country.schema';
+import { CountryRepositoryMongo } from './repositories/country.repository';
 
 @Module({
-  imports: [CommonModule],
+  imports: [MongooseModule.forFeature([{ name: Country.name, schema: CountrySchema }])],
+  providers: [CountriesService, { provide: 'CountryRepository', useClass: CountryRepositoryMongo }],
   controllers: [CountriesController],
-  providers: [CountriesService],
 })
 export class CountriesModule {}

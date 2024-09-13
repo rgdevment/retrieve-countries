@@ -8,6 +8,8 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
 
+  app.setGlobalPrefix('v1');
+
   const config = new DocumentBuilder()
     .setTitle('Retrieve Countries API')
     .setDescription('')
