@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { StateDto } from './state.dto';
 import { CurrencyDto } from './currency.dto';
 import { FlagDto } from './flag.dto';
+import { CityDto } from './city.dto';
 
 export class CountryDto {
   @ApiProperty({ description: 'Name of the country' })
@@ -57,6 +58,15 @@ export class CountryDto {
   @Expose()
   @Type(() => StateDto)
   readonly states?: StateDto[];
+
+  @ApiProperty({
+    description: 'List of cities in the country',
+    type: [CityDto],
+    required: false,
+  })
+  @Expose()
+  @Type(() => CityDto)
+  readonly cities?: CityDto[];
 
   @ApiProperty({ description: 'Latitude of the country' })
   @Expose()
