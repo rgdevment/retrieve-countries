@@ -17,7 +17,7 @@ describe('CountriesService', () => {
           provide: 'CountryRepository',
           useValue: {
             findAll: jest.fn(),
-            findByName: jest.fn(),
+            findByField: jest.fn(),
           },
         },
       ],
@@ -49,7 +49,7 @@ describe('CountriesService', () => {
 
       jest.spyOn(repository, 'findAll').mockResolvedValue(mockCountries as any);
 
-      const countries = await service.getAllCountries(true);
+      const countries = await service.getAllCountries(true, true);
       expect(countries).toEqual(plainToInstance(CountryDto, countries, { excludeExtraneousValues: true }));
     });
 
@@ -73,7 +73,7 @@ describe('CountriesService', () => {
 
       jest.spyOn(repository, 'findAll').mockResolvedValue(mockCountries as any);
 
-      const countries = await service.getAllCountries(false);
+      const countries = await service.getAllCountries(false, true);
       expect(countries).toEqual(plainToInstance(CountryDto, countries, { excludeExtraneousValues: true }));
     });
 
@@ -81,7 +81,7 @@ describe('CountriesService', () => {
       jest.spyOn(repository, 'findAll').mockResolvedValue([]);
 
       try {
-        await service.getAllCountries(true);
+        await service.getAllCountries(true, true);
       } catch (e) {
         if (e instanceof HttpException) {
           expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
@@ -111,9 +111,9 @@ describe('CountriesService', () => {
       },
     ];
 
-    jest.spyOn(repository, 'findByName').mockResolvedValue(mockCountries as any);
+    jest.spyOn(repository, 'findByField').mockResolvedValue(mockCountries as any);
 
-    const result = await service.getCountryByName("Cote D'Ivoire (Ivory Coast)", true, true);
+    const result = await service.getCountryByName("Cote D'Ivoire (Ivory Coast)", true, false);
 
     const countryDto: CountryDto = plainToInstance(CountryDto, result, {
       excludeExtraneousValues: true,
@@ -123,7 +123,7 @@ describe('CountriesService', () => {
   });
 
   it('should throw No Content exception when country is not found', async () => {
-    jest.spyOn(repository, 'findByName').mockResolvedValue(null);
+    jest.spyOn(repository, 'findByField').mockResolvedValue(null);
 
     try {
       await service.getCountryByName('Nonexistent Country', false, false);

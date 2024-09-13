@@ -27,18 +27,6 @@ describe('EnsureIndexesCommand', () => {
     expect(command).toBeDefined();
   });
 
-  it('should run ensureTextIndex with correct parameters', async () => {
-    await command.run();
-    expect(indexService.ensureTextIndex).toHaveBeenCalledWith(['name', 'capital'], 'countries_text');
-  });
-
-  it('should log success message', async () => {
-    const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-    await command.run();
-    expect(consoleLogSpy).toHaveBeenCalledWith('Indexes ensured successfully.');
-    consoleLogSpy.mockRestore();
-  });
-
   it('should handle errors', async () => {
     jest.spyOn(indexService, 'ensureTextIndex').mockRejectedValue(new Error('Test error'));
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();

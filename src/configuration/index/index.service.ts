@@ -43,4 +43,28 @@ export class IndexService {
       throw error;
     }
   }
+
+  async ensureIndexes(fields: string[]) {
+    try {
+      const existingIndexes = await this.countryModel.collection.indexes();
+      const indexNames = existingIndexes.map(index => index.name);
+
+      for (const field of fields) {
+        const indexName = `${field}_index`;
+        if (!indexNames.includes(indexName)) {
+          console.log(`Creating index: ${indexName}`);
+          await this.countryModel.collection.createIndex(
+            { [field]: 1 },
+            { name: indexName, collation: { locale: 'en', strength: 1 } },
+          );
+          console.log(`Index ${indexName} created successfully.`);
+        } else {
+          console.log(`Index ${indexName} already exists.`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to create indexes:', error);
+      throw error;
+    }
+  }
 }

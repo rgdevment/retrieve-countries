@@ -14,7 +14,7 @@ export class EnsureIndexesCommand extends CommandRunner {
 
   async run(): Promise<void> {
     try {
-      await this.indexService.ensureTextIndex(['name', 'capital'], 'countries_text');
+      await this.indexService.ensureIndexes(['name', 'capital']);
       console.log('Indexes ensured successfully.');
     } catch (error) {
       console.error('Error ensuring indexes:', error);

@@ -35,6 +35,9 @@ describe('CountryRepositoryMongo', () => {
     repository = module.get<CountryRepositoryMongo>(CountryRepositoryMongo);
     countryModel = module.get<Model<Country>>('CountryModel');
     connection = mongoose.connection;
+
+    await countryModel.createCollection();
+    await countryModel.collection.createIndex({ name: 'text' });
   });
 
   afterAll(async () => {
@@ -44,7 +47,8 @@ describe('CountryRepositoryMongo', () => {
 
   beforeEach(async () => {
     await connection.dropDatabase();
-    await countryModel.createIndexes({ name: 'text' });
+    await countryModel.createCollection();
+    await countryModel.collection.createIndex({ name: 'text' });
   });
 
   it('should be defined', () => {
@@ -146,11 +150,11 @@ describe('CountryRepositoryMongo', () => {
     };
 
     await countryModel.createCollection();
-    await countryModel.createIndexes({ name: 'text' });
+    await countryModel.collection.createIndex({ name: 'text' });
 
     await countryModel.create(mockCountry);
 
-    const result = await repository.findByName("Cote D'Ivoire (Ivory Coast)", {
+    const result = await repository.findByField('name', "Cote D'Ivoire (Ivory Coast)", {
       excludeCities: true,
       excludeStates: true,
     });
@@ -160,16 +164,10 @@ describe('CountryRepositoryMongo', () => {
   });
 
   it('should return null if country is not found', async () => {
-    const result = await repository.findByName('Nonexistent Country', { excludeCities: false, excludeStates: false });
+    const result = await repository.findByField('name', 'Nonexistent Country', {
+      excludeCities: false,
+      excludeStates: false,
+    });
     expect(result).toBeNull();
-  });
-
-  it('should call createIndexes', async () => {
-    await countryModel.createCollection();
-    const createIndexesSpy = jest.spyOn(countryModel, 'createIndexes').mockImplementation(async () => {});
-    await repository.findByName("Cote D'Ivoire (Ivory Coast)", { excludeCities: false, excludeStates: false });
-
-    expect(createIndexesSpy).toHaveBeenCalledWith({ name: 'text' });
-    createIndexesSpy.mockRestore();
   });
 });

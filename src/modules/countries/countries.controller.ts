@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { CountriesService } from './countries.service';
 import { CountryDto } from '../../common/dto/country.dto';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags, getSchemaPath } from '@nestjs/swagger';
 
 @ApiTags('countries')
 @Controller()
@@ -27,18 +27,34 @@ export class CountriesController {
     required: false,
     type: Boolean,
   })
+  @ApiQuery({
+    name: 'excludeCities',
+    description: `Exclude cities in the response. This option is temporarily disabled until we optimize and improve
+                  the response size.`,
+    required: false,
+    type: Boolean,
+  })
   @ApiResponse({
     status: 200,
-    description: 'Successful operation',
+    description: 'Successful operation. Returns a list of countries with their details, excluding states and cities.',
     type: [CountryDto],
+    schema: {
+      type: 'array',
+      items: {
+        $ref: getSchemaPath(CountryDto),
+      },
+    },
   })
   @ApiResponse({
     status: 204,
     description: 'No content',
   })
-  async getAllCountries(@Query('excludeStates') _: string): Promise<CountryDto[]> {
+  async getAllCountries(
+    @Query('excludeStates') excludeStates: string,
+    @Query('excludeCities') excludeCities: string,
+  ): Promise<CountryDto[]> {
     // It will always be excluded until the response size is optimized
-    return this.service.getAllCountries(true);
+    return this.service.getAllCountries(excludeStates === 'true' || true, excludeCities === 'true' || true);
   }
 
   @Get(':name')
@@ -65,8 +81,14 @@ export class CountriesController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Successful operation',
-    type: CountryDto,
+    description: 'Successful operation. Returns a list of countries with their details.',
+    type: [CountryDto],
+    schema: {
+      type: 'array',
+      items: {
+        $ref: getSchemaPath(CountryDto),
+      },
+    },
   })
   @ApiResponse({
     status: 204,
@@ -78,5 +100,14 @@ export class CountriesController {
     @Query('excludeCities') excludeCities: string,
   ): Promise<CountryDto> {
     return await this.service.getCountryByName(name, excludeStates === 'true', excludeCities === 'true');
+  }
+
+  @Get('capital/:capital')
+  async getCountryByCapital(
+    @Param('capital') capital: string,
+    @Query('excludeStates') excludeStates: string,
+    @Query('excludeCities') excludeCities: string,
+  ): Promise<CountryDto> {
+    return await this.service.getCountryByCapital(capital, excludeStates === 'true', excludeCities === 'true');
   }
 }

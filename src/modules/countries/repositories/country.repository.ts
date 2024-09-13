@@ -10,28 +10,19 @@ export class CountryRepositoryMongo implements CountryRepository {
   constructor(@InjectModel(Country.name) private readonly countryModel: Model<Country>) {}
 
   async findAll(options: ExcludeOptions): Promise<Country[]> {
-    const projection: any = {
-      cities: 0,
-    };
-
-    if (options.excludeStates) {
-      projection.states = 0;
-    }
-
+    options.excludeCities = true;
+    const projection = this.resolveProjection(options);
     return this.countryModel.find({}, projection).exec();
   }
 
-  async findByName(name: string, options: ExcludeOptions): Promise<Country | null> {
+  async findByField(field: string, value: string, options: ExcludeOptions): Promise<Country | null> {
+    const projection = this.resolveProjection(options);
+    const query = { [field]: value };
+    return this.countryModel.findOne(query, projection).collation({ locale: 'en', strength: 1 }).exec();
+  }
+
+  private resolveProjection(options: ExcludeOptions) {
     const projection: any = {};
-
-    const normalizedName = name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[\s()'.\-\/]+/g, ' ')
-      .trim();
-
-    await this.countryModel.createIndexes({ name: 'text' });
 
     if (options.excludeStates) {
       projection.states = 0;
@@ -40,7 +31,6 @@ export class CountryRepositoryMongo implements CountryRepository {
     if (options.excludeCities) {
       projection.cities = 0;
     }
-
-    return this.countryModel.findOne({ $text: { $search: normalizedName, $caseSensitive: false } }, projection).exec();
+    return projection;
   }
 }

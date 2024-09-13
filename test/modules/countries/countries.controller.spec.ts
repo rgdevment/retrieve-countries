@@ -49,7 +49,7 @@ describe('CountriesController', () => {
 
       jest.spyOn(service, 'getAllCountries').mockResolvedValue(result);
 
-      const response = await controller.getAllCountries('true');
+      const response = await controller.getAllCountries('true', 'true');
       expect(response).toEqual(result);
     });
 
@@ -57,7 +57,7 @@ describe('CountriesController', () => {
       jest.spyOn(service, 'getAllCountries').mockResolvedValue([]);
 
       try {
-        await controller.getAllCountries('true');
+        await controller.getAllCountries('true', 'false');
       } catch (e) {
         if (e instanceof HttpException) {
           expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
