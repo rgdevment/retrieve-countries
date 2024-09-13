@@ -23,7 +23,4 @@ export class Country extends Document {
   @Prop({ type: String }) tld: string;
 }
 
-const CountrySchema = SchemaFactory.createForClass(Country);
-CountrySchema.index({ name: 'text' });
-
-export { CountrySchema };
+export const CountrySchema = SchemaFactory.createForClass(Country);

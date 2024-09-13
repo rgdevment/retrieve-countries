@@ -8,6 +8,14 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
 
+  app.use((req: { path: string }, res: { redirect: (arg0: number, arg1: string) => void }, next: () => void) => {
+    if (req.path === '/') {
+      res.redirect(301, 'https://github.com/rgdevment/retrieve-countries');
+    } else {
+      next();
+    }
+  });
+
   app.setGlobalPrefix('v1');
 
   const config = new DocumentBuilder()
