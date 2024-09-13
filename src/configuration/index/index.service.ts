@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Country } from '../../common/schemas/country.schema';
 
 @Injectable()
 export class IndexService {
+  private readonly logger = new Logger(IndexService.name);
+
   constructor(@InjectModel(Country.name) private readonly countryModel: Model<Country>) {}
 
   /**
@@ -28,18 +30,14 @@ export class IndexService {
       const indexExists = existingIndexes.some(index => index.name === indexName);
 
       if (!indexExists) {
-        console.log(`Creating text index: ${indexName}`);
         const indexFields = fields.reduce((acc, field) => {
           acc[field] = 'text';
           return acc;
         }, {});
         await this.countryModel.collection.createIndex(indexFields, { name: indexName });
-        console.log(`Text index ${indexName} created successfully.`);
-      } else {
-        console.log(`Text index ${indexName} already exists.`);
       }
     } catch (error) {
-      console.log(`Failed to create text index ${indexName}:`, error);
+      this.logger.debug('Error ensuring text index:', error);
       throw error;
     }
   }
@@ -52,18 +50,14 @@ export class IndexService {
       for (const field of fields) {
         const indexName = `${field}_index`;
         if (!indexNames.includes(indexName)) {
-          console.log(`Creating index: ${indexName}`);
           await this.countryModel.collection.createIndex(
             { [field]: 1 },
             { name: indexName, collation: { locale: 'en', strength: 1 } },
           );
-          console.log(`Index ${indexName} created successfully.`);
-        } else {
-          console.log(`Index ${indexName} already exists.`);
         }
       }
     } catch (error) {
-      console.error('Failed to create indexes:', error);
+      this.logger.debug('Error ensuring indexes:', error);
       throw error;
     }
   }

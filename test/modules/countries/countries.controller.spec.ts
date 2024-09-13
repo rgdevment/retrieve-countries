@@ -18,6 +18,7 @@ describe('CountriesController', () => {
           useValue: {
             getAllCountries: jest.fn(),
             getCountryByName: jest.fn(),
+            getCountryByCapital: jest.fn(),
           },
         },
       ],
@@ -49,7 +50,7 @@ describe('CountriesController', () => {
 
       jest.spyOn(service, 'getAllCountries').mockResolvedValue(result);
 
-      const response = await controller.getAllCountries('true', 'true');
+      const response = await controller.getAllCountries('false', 'false');
       expect(response).toEqual(result);
     });
 
@@ -142,5 +143,28 @@ describe('CountriesController', () => {
         fail('Expected an HttpException');
       }
     }
+  });
+
+  it('should return a list of countries by Capital', async () => {
+    const result: CountryDto = {
+      name: 'Chile',
+      capital: 'Santiago',
+      code: 'CL',
+      currency: { symbol: 'C$', code: 'C1', name: 'Currency 1' },
+      flags: { ico: 'icon', alt: 'flag', png: 'png', svg: 'svg' },
+      iso3: 'C1C',
+      latitude: 10,
+      longitude: 20,
+      phone_code: '+1',
+      region: 'Region 1',
+      states: [{ name: 'Antofagasta', code: 'AF', country_code: 'C1', latitude: 10, longitude: 20 }],
+      subregion: 'Subregion 1',
+      tld: '.cl',
+    };
+
+    jest.spyOn(service, 'getCountryByCapital').mockResolvedValue(result);
+
+    const response = await controller.getCountryByCapital('SANTIAGO', 'true', 'true');
+    expect(response).toEqual(result);
   });
 });
