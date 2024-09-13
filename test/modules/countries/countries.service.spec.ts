@@ -4,6 +4,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
 import { CountryRepository } from '../../../src/modules/countries/repositories/country.repository.interface';
 import { CountryDto } from '../../../src/common/dto/country.dto';
+import { ExcludeOptions } from '../../../src/common/interfaces/exclude-options.interface';
 
 describe('CountriesService', () => {
   let service: CountriesService;
@@ -48,8 +49,8 @@ describe('CountriesService', () => {
       ];
 
       jest.spyOn(repository, 'findAll').mockResolvedValue(mockCountries as any);
-
-      const countries = await service.getAllCountries(true, true);
+      const options: ExcludeOptions = { excludeStates: true, excludeCities: true };
+      const countries = await service.getAllCountries(options);
       expect(countries).toEqual(plainToInstance(CountryDto, countries, { excludeExtraneousValues: true }));
     });
 
@@ -72,8 +73,8 @@ describe('CountriesService', () => {
       ];
 
       jest.spyOn(repository, 'findAll').mockResolvedValue(mockCountries as any);
-
-      const countries = await service.getAllCountries(false, true);
+      const options: ExcludeOptions = { excludeStates: false, excludeCities: true };
+      const countries = await service.getAllCountries(options);
       expect(countries).toEqual(plainToInstance(CountryDto, countries, { excludeExtraneousValues: true }));
     });
 
@@ -81,7 +82,8 @@ describe('CountriesService', () => {
       jest.spyOn(repository, 'findAll').mockResolvedValue([]);
 
       try {
-        await service.getAllCountries(true, true);
+        const options: ExcludeOptions = { excludeStates: true, excludeCities: true };
+        await service.getAllCountries(options);
       } catch (e) {
         if (e instanceof HttpException) {
           expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
@@ -112,8 +114,8 @@ describe('CountriesService', () => {
     ];
 
     jest.spyOn(repository, 'findByField').mockResolvedValue(mockCountries as any);
-
-    const result = await service.getCountryByName("Cote D'Ivoire (Ivory Coast)", true, true);
+    const options: ExcludeOptions = { excludeStates: true, excludeCities: true };
+    const result = await service.getCountryByName("Cote D'Ivoire (Ivory Coast)", options);
 
     const countryDto: CountryDto = plainToInstance(CountryDto, result, {
       excludeExtraneousValues: true,
@@ -141,8 +143,8 @@ describe('CountriesService', () => {
     ];
 
     jest.spyOn(repository, 'findByField').mockResolvedValue(mockCountries as any);
-
-    const result = await service.getCountryByCapital('Santiago', true, true);
+    const options: ExcludeOptions = { excludeStates: true, excludeCities: true };
+    const result = await service.getCountryByCapital('Santiago', options);
 
     const countryDto: CountryDto = plainToInstance(CountryDto, result, {
       excludeExtraneousValues: true,
@@ -155,7 +157,8 @@ describe('CountriesService', () => {
     jest.spyOn(repository, 'findByField').mockResolvedValue(null);
 
     try {
-      await service.getCountryByName('Nonexistent Country', false, false);
+      const options: ExcludeOptions = { excludeStates: false, excludeCities: false };
+      await service.getCountryByName('Nonexistent Country', options);
     } catch (e) {
       if (e instanceof HttpException) {
         expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
@@ -170,7 +173,8 @@ describe('CountriesService', () => {
     jest.spyOn(repository, 'findByField').mockResolvedValue(null);
 
     try {
-      await service.getCountryByCapital('Nonexistent Capital', false, false);
+      const options: ExcludeOptions = { excludeStates: false, excludeCities: false };
+      await service.getCountryByCapital('Nonexistent Capital', options);
     } catch (e) {
       if (e instanceof HttpException) {
         expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);

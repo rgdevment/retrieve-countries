@@ -3,7 +3,10 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { CountriesController } from '../../../src/modules/countries/countries.controller';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
 import { CountryDto } from '../../../src/common/dto/country.dto';
-import { plainToInstance } from 'class-transformer';
+import { plainToClass, plainToInstance } from 'class-transformer';
+import { CountriesQueryDto } from '../../../src/common/dto/countries-query.dto';
+import { CacheModule } from '@nestjs/cache-manager';
+import { validate } from 'class-validator';
 
 describe('CountriesController', () => {
   let controller: CountriesController;
@@ -11,6 +14,7 @@ describe('CountriesController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [CacheModule.register()],
       controllers: [CountriesController],
       providers: [
         {
@@ -50,7 +54,11 @@ describe('CountriesController', () => {
 
       jest.spyOn(service, 'getAllCountries').mockResolvedValue(result);
 
-      const response = await controller.getAllCountries('false', 'false');
+      const dto = plainToClass(CountriesQueryDto, { excludeStates: 'true', excludeCities: 'false' });
+      const errors = await validate(dto);
+      const response = await controller.getAllCountries(dto);
+
+      expect(errors.length).toBe(0);
       expect(response).toEqual(result);
     });
 
@@ -58,7 +66,8 @@ describe('CountriesController', () => {
       jest.spyOn(service, 'getAllCountries').mockResolvedValue([]);
 
       try {
-        await controller.getAllCountries('true', 'false');
+        const query: CountriesQueryDto = { excludeStates: true, excludeCities: false };
+        await controller.getAllCountries(query);
       } catch (e) {
         if (e instanceof HttpException) {
           expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
@@ -94,9 +103,10 @@ describe('CountriesController', () => {
     });
 
     jest.spyOn(service, 'getCountryByName').mockResolvedValue(countryDto);
-
-    const result = await controller.getCountryByName("Cote D'Ivoire (Ivory Coast)", 'true', 'true');
-
+    const query: CountriesQueryDto = { excludeStates: true, excludeCities: true };
+    const result = await controller.getCountryByName("Cote D'Ivoire (Ivory Coast)", query);
+    expect(query.excludeStates).toBe(true);
+    expect(query.excludeCities).toBe(true);
     expect(result).toEqual(countryDto);
   });
 
@@ -124,8 +134,8 @@ describe('CountriesController', () => {
     });
 
     jest.spyOn(service, 'getCountryByName').mockResolvedValue(countryDto);
-
-    const result = await controller.getCountryByName("Cote D'Ivoire (Ivory Coast)", 'false', 'false');
+    const query: CountriesQueryDto = { excludeStates: false, excludeCities: false };
+    const result = await controller.getCountryByName("Cote D'Ivoire (Ivory Coast)", query);
 
     expect(result).toEqual(countryDto);
   });
@@ -134,7 +144,8 @@ describe('CountriesController', () => {
     jest.spyOn(service, 'getCountryByName').mockResolvedValue(null);
 
     try {
-      await controller.getCountryByName('Nonexistent Country', 'false', 'false');
+      const query: CountriesQueryDto = { excludeStates: false, excludeCities: false };
+      await controller.getCountryByName('Nonexistent Country', query);
     } catch (e) {
       if (e instanceof HttpException) {
         expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
@@ -163,8 +174,10 @@ describe('CountriesController', () => {
     };
 
     jest.spyOn(service, 'getCountryByCapital').mockResolvedValue(result);
-
-    const response = await controller.getCountryByCapital('SANTIAGO', 'true', 'true');
+    const query: CountriesQueryDto = { excludeStates: true, excludeCities: true };
+    const response = await controller.getCountryByCapital('SANTIAGO', query);
+    expect(query.excludeStates).toBe(true);
+    expect(query.excludeCities).toBe(true);
     expect(response).toEqual(result);
   });
 });
