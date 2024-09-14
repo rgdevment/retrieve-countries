@@ -7,6 +7,8 @@ import { CommonModule } from './common/common.module';
 import { CountriesModule } from './modules/countries/countries.module';
 import { CitiesModule } from './modules/cities/cities.module';
 import { StatesModule } from './modules/states/states.module';
+import { ConfigurationModule } from './configuration/configuration.module';
+import { CommandsModule } from './command/command.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { StatesModule } from './modules/states/states.module';
     CountriesModule,
     CitiesModule,
     StatesModule,
+    ConfigurationModule,
+    CommandsModule,
   ],
   controllers: [],
   providers: [],

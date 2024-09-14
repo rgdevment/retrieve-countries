@@ -1,42 +1,158 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Query } from '@nestjs/common';
 import { CountriesService } from './countries.service';
 import { CountryDto } from '../../common/dto/country.dto';
-import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CountriesQueryDto } from '../../common/dto/countries-query.dto';
 
+@ApiTags('countries')
 @Controller()
 export class CountriesController {
   constructor(private readonly service: CountriesService) {}
 
   @Get('all')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Get all country data.',
-    description: `This operation retrieves data for all countries along with their states. However, you will 
-                  not be able to obtain a list of cities in this call due to the large number of cities in the 
-                  world. Including all cities in the response of this API is not recommended for us or for the 
-                  application consuming this JSON. If you need to obtain cities, you can make a new call to one 
-                  of our other endpoints or filter by country, region, or other criteria. States are included by 
-                  default, but you can exclude them using the parameter excludeStates=true. 
-                  As a commitment to best practices, we ask for your help by caching the API response to avoid 
-                  excessive usage and help us keep it public and available for everyone.`,
-  })
-  @ApiQuery({
-    name: 'includeStates',
-    description: `Include states in the response. This option is temporarily disabled until we optimize and improve
-                  the response size.`,
-    required: false,
-    type: Boolean,
+    summary: 'Get all country data',
+    description: `
+      Retrieves data for all countries along with their states. 
+      Note that obtaining a list of cities in this call is not possible due to the large number of cities globally.
+      Including all cities in the API response is not recommended for either us or the consuming application.
+      
+      **Optional Query Parameters:**
+      - \`excludeStates=true\`: *This option is temporarily disabled until we optimize and improve the response size.*
+      - \`excludeCities=true\`: *This option is temporarily disabled until we optimize and improve the response size.*
+      
+      **Best Practices:**
+      We recommend caching the API response to prevent excessive usage and help keep the service public and available 
+      for everyone.
+    `,
   })
   @ApiResponse({
     status: 200,
-    description: 'Successful operation',
+    description: 'Successful operation. Returns a list of countries with their details, excluding states and cities.',
     type: [CountryDto],
+    schema: {
+      type: 'array',
+      items: {
+        $ref: '#/components/schemas/CountryDto',
+      },
+    },
   })
   @ApiResponse({
     status: 204,
-    description: 'No content',
+    description: 'No content. No countries found.',
   })
-  async getAllCountries(@Query('includeStates') _: string): Promise<CountryDto[]> {
-    // It will always be excluded until the response size is optimized
-    return this.service.getAllCountries(false);
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request. Please verify the provided parameters.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error. Please try again later.',
+  })
+  async getAllCountries(@Query() query: CountriesQueryDto): Promise<CountryDto[]> {
+    // We are working to optimize the size of the query, in the meantime they will always be excluded
+    query.excludeStates = true;
+    query.excludeCities = true;
+    return this.service.getAllCountries(query);
+  }
+
+  @Get(':name')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get country data by name',
+    description: `
+      Retrieves data for a country based on its name. 
+      Includes information about the country's cities.
+      
+      **Optional Query Parameters:**
+      - \`excludeStates=true\`: Excludes states from the results.
+      - \`excludeCities=true\`: Excludes cities from the results.
+      
+      **Best Practices:**
+      It is recommended to cache API responses to prevent excessive usage and ensure the service remains available 
+      to all users.
+    `,
+  })
+  @ApiParam({
+    name: 'name',
+    description: 'Name of the country (e.g., "Spain")',
+    example: 'Spain',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successful operation. Returns a list of countries with their details.',
+    type: [CountryDto],
+    schema: {
+      type: 'array',
+      items: {
+        $ref: '#/components/schemas/CountryDto',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'No content. The provided country name does not correspond to any registered country.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request. Please verify the provided parameters.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error. Please try again later.',
+  })
+  async getCountryByName(@Param('name') name: string, @Query() query: CountriesQueryDto): Promise<CountryDto> {
+    return await this.service.getCountryByName(name, query);
+  }
+
+  @Get('capital/:capital')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get country data by capital',
+    description: `
+      Retrieves data for a country based on its capital city.
+
+      **Optional Query Parameters:**
+      - \`excludeStates=false\`: Includes states in the results.
+      - \`excludeCities=true\`: Excludes cities from the results.
+
+      **Best Practices:**
+      It is recommended to cache API responses to prevent excessive usage and ensure the service remains available 
+      to all users.
+    `,
+  })
+  @ApiParam({
+    name: 'capital',
+    description: 'Name of the capital city (e.g., "Santiago")',
+    example: 'Santiago',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successful operation. Returns the requested country data.',
+    type: CountryDto,
+    schema: {
+      type: 'array',
+      items: {
+        $ref: '#/components/schemas/CountryDto',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'No content. The provided capital does not correspond to any registered country.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request. Please verify the provided parameters.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error. Please try again later.',
+  })
+  async getCountryByCapital(@Param('capital') capital: string, @Query() query: CountriesQueryDto): Promise<CountryDto> {
+    return await this.service.getCountryByCapital(capital, query);
   }
 }

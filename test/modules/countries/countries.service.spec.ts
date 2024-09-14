@@ -4,6 +4,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
 import { CountryRepository } from '../../../src/modules/countries/repositories/country.repository.interface';
 import { CountryDto } from '../../../src/common/dto/country.dto';
+import { ExcludeOptions } from '../../../src/common/interfaces/exclude-options.interface';
 
 describe('CountriesService', () => {
   let service: CountriesService;
@@ -17,6 +18,7 @@ describe('CountriesService', () => {
           provide: 'CountryRepository',
           useValue: {
             findAll: jest.fn(),
+            findByField: jest.fn(),
           },
         },
       ],
@@ -47,8 +49,8 @@ describe('CountriesService', () => {
       ];
 
       jest.spyOn(repository, 'findAll').mockResolvedValue(mockCountries as any);
-
-      const countries = await service.getAllCountries(true);
+      const options: ExcludeOptions = { excludeStates: true, excludeCities: true };
+      const countries = await service.getAllCountries(options);
       expect(countries).toEqual(plainToInstance(CountryDto, countries, { excludeExtraneousValues: true }));
     });
 
@@ -71,8 +73,8 @@ describe('CountriesService', () => {
       ];
 
       jest.spyOn(repository, 'findAll').mockResolvedValue(mockCountries as any);
-
-      const countries = await service.getAllCountries(false);
+      const options: ExcludeOptions = { excludeStates: false, excludeCities: true };
+      const countries = await service.getAllCountries(options);
       expect(countries).toEqual(plainToInstance(CountryDto, countries, { excludeExtraneousValues: true }));
     });
 
@@ -80,7 +82,8 @@ describe('CountriesService', () => {
       jest.spyOn(repository, 'findAll').mockResolvedValue([]);
 
       try {
-        await service.getAllCountries(true);
+        const options: ExcludeOptions = { excludeStates: true, excludeCities: true };
+        await service.getAllCountries(options);
       } catch (e) {
         if (e instanceof HttpException) {
           expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
@@ -90,5 +93,95 @@ describe('CountriesService', () => {
         }
       }
     });
+  });
+
+  it('should return a country DTO when country is found and exclude all', async () => {
+    const mockCountries = [
+      {
+        name: 'Chile',
+        capital: 'Capital 1',
+        code: 'C1',
+        currency: { symbol: 'C$', code: 'C1', name: 'Currency 1' },
+        flags: { ico: 'icon', alt: 'flag', png: 'png', svg: 'svg' },
+        iso3: 'C1C',
+        latitude: 10,
+        longitude: 20,
+        phone_code: '+1',
+        region: 'Region 1',
+        subregion: 'Subregion 1',
+        tld: '.c1',
+      },
+    ];
+
+    jest.spyOn(repository, 'findByField').mockResolvedValue(mockCountries as any);
+    const options: ExcludeOptions = { excludeStates: true, excludeCities: true };
+    const result = await service.getCountryByName("Cote D'Ivoire (Ivory Coast)", options);
+
+    const countryDto: CountryDto = plainToInstance(CountryDto, result, {
+      excludeExtraneousValues: true,
+    });
+
+    expect(result).toEqual(countryDto);
+  });
+
+  it('should return a country DTO when capital is found and exclude all', async () => {
+    const mockCountries = [
+      {
+        name: 'Chile',
+        capital: 'Capital 1',
+        code: 'C1',
+        currency: { symbol: 'C$', code: 'C1', name: 'Currency 1' },
+        flags: { ico: 'icon', alt: 'flag', png: 'png', svg: 'svg' },
+        iso3: 'C1C',
+        latitude: 10,
+        longitude: 20,
+        phone_code: '+1',
+        region: 'Region 1',
+        subregion: 'Subregion 1',
+        tld: '.c1',
+      },
+    ];
+
+    jest.spyOn(repository, 'findByField').mockResolvedValue(mockCountries as any);
+    const options: ExcludeOptions = { excludeStates: true, excludeCities: true };
+    const result = await service.getCountryByCapital('Santiago', options);
+
+    const countryDto: CountryDto = plainToInstance(CountryDto, result, {
+      excludeExtraneousValues: true,
+    });
+
+    expect(result).toEqual(countryDto);
+  });
+
+  it('should throw No Content exception when country is not found', async () => {
+    jest.spyOn(repository, 'findByField').mockResolvedValue(null);
+
+    try {
+      const options: ExcludeOptions = { excludeStates: false, excludeCities: false };
+      await service.getCountryByName('Nonexistent Country', options);
+    } catch (e) {
+      if (e instanceof HttpException) {
+        expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
+        expect(e.getResponse()).toBe('No content');
+      } else {
+        fail('Expected an HttpException');
+      }
+    }
+  });
+
+  it('should throw No Content exception when capital is not found', async () => {
+    jest.spyOn(repository, 'findByField').mockResolvedValue(null);
+
+    try {
+      const options: ExcludeOptions = { excludeStates: false, excludeCities: false };
+      await service.getCountryByCapital('Nonexistent Capital', options);
+    } catch (e) {
+      if (e instanceof HttpException) {
+        expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
+        expect(e.getResponse()).toBe('No content');
+      } else {
+        fail('Expected an HttpException');
+      }
+    }
   });
 });

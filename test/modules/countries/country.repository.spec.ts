@@ -35,6 +35,9 @@ describe('CountryRepositoryMongo', () => {
     repository = module.get<CountryRepositoryMongo>(CountryRepositoryMongo);
     countryModel = module.get<Model<Country>>('CountryModel');
     connection = mongoose.connection;
+
+    await countryModel.createCollection();
+    await countryModel.collection.createIndex({ name: 'text' });
   });
 
   afterAll(async () => {
@@ -44,6 +47,8 @@ describe('CountryRepositoryMongo', () => {
 
   beforeEach(async () => {
     await connection.dropDatabase();
+    await countryModel.createCollection();
+    await countryModel.collection.createIndex({ name: 'text' });
   });
 
   it('should be defined', () => {
@@ -70,7 +75,7 @@ describe('CountryRepositoryMongo', () => {
 
     await countryModel.create(mockCountry);
 
-    const result = await repository.findAll({ includeStates: true });
+    const result = await repository.findAll({ excludeStates: false });
     expect(result).toHaveLength(1);
     expect(result[0].name).toEqual('Country 1');
     expect(result[0].cities).toBeUndefined();
@@ -96,7 +101,7 @@ describe('CountryRepositoryMongo', () => {
 
     await countryModel.create(mockCountry);
 
-    const result = await repository.findAll({ includeStates: true });
+    const result = await repository.findAll({ excludeStates: false });
     expect(result).toHaveLength(1);
     expect(result[0].name).toEqual('Chile');
     expect(result[0].states[0].name).toEqual('Antofagasta');
@@ -120,9 +125,49 @@ describe('CountryRepositoryMongo', () => {
 
     await countryModel.create(mockCountry);
 
-    const result = await repository.findAll();
+    const result = await repository.findAll({ excludeStates: true });
     expect(result).toHaveLength(1);
     expect(result[0].name).toEqual('Chile');
     expect(result[0].states).toBeUndefined();
+  });
+
+  it('should find a country by exact name', async () => {
+    const mockCountry = {
+      name: "Cote D'Ivoire (Ivory Coast)",
+      capital: 'Yamoussoukro',
+      code: 'CI',
+      currency: { symbol: 'CFA', code: 'XOF', name: 'West African CFA franc' },
+      flags: { ico: 'ico', alt: 'flag', png: 'png', svg: 'svg' },
+      iso3: 'CIV',
+      latitude: 7.539989,
+      longitude: -5.54708,
+      phone_code: '+225',
+      region: 'Africa',
+      subregion: 'Western Africa',
+      tld: '.ci',
+      cities: [],
+      states: [],
+    };
+
+    await countryModel.createCollection();
+    await countryModel.collection.createIndex({ name: 'text' });
+
+    await countryModel.create(mockCountry);
+
+    const result = await repository.findByField('name', "Cote D'Ivoire (Ivory Coast)", {
+      excludeCities: true,
+      excludeStates: true,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.name).toEqual(mockCountry.name);
+  });
+
+  it('should return null if country is not found', async () => {
+    const result = await repository.findByField('name', 'Nonexistent Country', {
+      excludeCities: false,
+      excludeStates: false,
+    });
+    expect(result).toBeNull();
   });
 });
