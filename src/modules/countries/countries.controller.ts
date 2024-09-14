@@ -17,7 +17,6 @@ export class CountriesController {
     description: `
       Retrieves data for all countries along with their states. 
       Note that obtaining a list of cities in this call is not possible due to the large number of cities globally.
-      Including all cities in the API response is not recommended for either us or the consuming application.
       
       **Optional Query Parameters:**
       - \`excludeStates=true\`: *This option is temporarily disabled until we optimize and improve the response size.*
@@ -57,11 +56,65 @@ export class CountriesController {
   }
 
   @Get('region/:region')
+  @ApiOperation({
+    summary: 'Retrieve countries by region',
+    description: `Fetches a list of countries within a specified region. Optionally, you can exclude states from the 
+                  response using the \`excludeStates\` query parameter. To promote efficient API usage, please consider 
+                  caching the response to minimize unnecessary requests.`,
+  })
+  @ApiParam({
+    name: 'region',
+    description: 'The name of the region to filter countries by (e.g., "Americas", "Europe").',
+    example: 'Americas',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'A list of countries within the specified region.',
+    isArray: true,
+    type: CountryDto,
+    schema: {
+      type: 'array',
+      items: {
+        $ref: '#/components/schemas/CountryDto',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'No content found for the specified region.',
+  })
   async getCountryByRegion(@Param('region') region: string, @Query() query: CountriesQueryDto): Promise<CountryDto[]> {
     return await this.service.getCountryByRegion(region, query);
   }
 
   @Get('subregion/:subregion')
+  @ApiOperation({
+    summary: 'Retrieve countries by subregion',
+    description: `Fetches a list of countries within a specified subregion. Optionally, you can exclude states from the
+                  response using the \`excludeStates\` query parameter. To promote efficient API usage, please consider 
+                  caching the response to minimize unnecessary requests.`,
+  })
+  @ApiParam({
+    name: 'subregion',
+    description: 'The name of the subregion to filter countries by (e.g., "Southern Europe").',
+    example: 'Southern Europe',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'A list of countries within the specified subregion.',
+    isArray: true,
+    type: CountryDto,
+    schema: {
+      type: 'array',
+      items: {
+        $ref: '#/components/schemas/CountryDto',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'No content found for the specified subregion.',
+  })
   async getCountryBySubregion(
     @Param('subregion') subregion: string,
     @Query() query: CountriesQueryDto,
