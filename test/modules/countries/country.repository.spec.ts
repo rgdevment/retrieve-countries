@@ -75,7 +75,7 @@ describe('CountryRepositoryMongo', () => {
 
     await countryModel.create(mockCountry);
 
-    const result = await repository.findAll({ excludeStates: false });
+    const result = await repository.findAll({ excludeStates: false, excludeCities: true });
     expect(result).toHaveLength(1);
     expect(result[0].name).toEqual('Country 1');
     expect(result[0].cities).toBeUndefined();
@@ -154,7 +154,7 @@ describe('CountryRepositoryMongo', () => {
 
     await countryModel.create(mockCountry);
 
-    const result = await repository.findByField('name', "Cote D'Ivoire (Ivory Coast)", {
+    const result = await repository.findOneBy('name', "Cote D'Ivoire (Ivory Coast)", {
       excludeCities: true,
       excludeStates: true,
     });
@@ -164,10 +164,42 @@ describe('CountryRepositoryMongo', () => {
   });
 
   it('should return null if country is not found', async () => {
-    const result = await repository.findByField('name', 'Nonexistent Country', {
+    const result = await repository.findOneBy('name', 'Nonexistent Country', {
       excludeCities: false,
       excludeStates: false,
     });
     expect(result).toBeNull();
+  });
+
+  it('should return null if country is not found by field', async () => {
+    const result = await repository.findAllBy('region', 'Nonexistent Country', {
+      excludeCities: false,
+      excludeStates: false,
+    });
+    expect(result).toStrictEqual([]);
+  });
+
+  it('should exclude states and cities when find all by field', async () => {
+    const mockCountry = {
+      name: 'Chile',
+      capital: 'Capital 2',
+      code: 'C2',
+      currency: { symbol: 'C$', code: 'C2', name: 'Currency 2' },
+      flags: { ico: 'icon', alt: 'flag', png: 'png', svg: 'svg' },
+      iso3: 'C2C',
+      latitude: 20,
+      longitude: 30,
+      phone_code: '+2',
+      region: 'americas',
+      subregion: 'Subregion 2',
+      tld: '.c2',
+    };
+
+    await countryModel.create(mockCountry);
+
+    const result = await repository.findAllBy('region', 'americas', { excludeStates: true, excludeCities: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toEqual('Chile');
+    expect(result[0].states).toBeUndefined();
   });
 });

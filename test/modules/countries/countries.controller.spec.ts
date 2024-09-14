@@ -21,6 +21,8 @@ describe('CountriesController', () => {
             getAllCountries: jest.fn(),
             getCountryByName: jest.fn(),
             getCountryByCapital: jest.fn(),
+            getCountryByRegion: jest.fn(),
+            getCountryBySubregion: jest.fn(),
           },
         },
       ],
@@ -176,6 +178,96 @@ describe('CountriesController', () => {
     const response = await controller.getCountryByCapital('SANTIAGO', query);
     expect(query.excludeStates).toBe(true);
     expect(query.excludeCities).toBe(true);
+    expect(response).toEqual(result);
+  });
+
+  it('should return No Content status when region is not found', async () => {
+    jest.spyOn(service, 'getCountryByRegion').mockResolvedValue([]);
+
+    try {
+      const query: CountriesQueryDto = { excludeStates: true, excludeCities: true };
+      await controller.getCountryByRegion('Nonexistent Region', query);
+    } catch (e) {
+      if (e instanceof HttpException) {
+        expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
+        expect(e.getResponse()).toBe('No content');
+      } else {
+        fail('Expected an HttpException');
+      }
+    }
+  });
+
+  it('should return No Content status when subregion is not found', async () => {
+    jest.spyOn(service, 'getCountryBySubregion').mockResolvedValue([]);
+
+    try {
+      const query: CountriesQueryDto = { excludeStates: true, excludeCities: true };
+      await controller.getCountryBySubregion('Nonexistent Subregion', query);
+    } catch (e) {
+      if (e instanceof HttpException) {
+        expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
+        expect(e.getResponse()).toBe('No content');
+      } else {
+        fail('Expected an HttpException');
+      }
+    }
+  });
+
+  it('should return a list of countries by region', async () => {
+    const result: CountryDto[] = [
+      {
+        name: 'Chile',
+        capital: 'Santiago',
+        code: 'CL',
+        currency: { symbol: 'C$', code: 'C1', name: 'Currency 1' },
+        flags: { ico: 'icon', alt: 'flag', png: 'png', svg: 'svg' },
+        iso3: 'C1C',
+        latitude: 10,
+        longitude: 20,
+        phone_code: '+1',
+        region: 'Region 1',
+        states: [{ name: 'Antofagasta', code: 'AF', country_code: 'C1', latitude: 10, longitude: 20 }],
+        subregion: 'Subregion 1',
+        tld: '.cl',
+      },
+    ];
+
+    jest.spyOn(service, 'getCountryByRegion').mockResolvedValue(result);
+
+    const dto = plainToClass(CountriesQueryDto, { excludeStates: 'true', excludeCities: 'false' });
+    const errors = await validate(dto);
+    const response = await controller.getCountryByRegion('Region 1', dto);
+
+    expect(errors.length).toBe(0);
+    expect(response).toEqual(result);
+  });
+
+  it('should return a list of countries by subregion', async () => {
+    const result: CountryDto[] = [
+      {
+        name: 'Chile',
+        capital: 'Santiago',
+        code: 'CL',
+        currency: { symbol: 'C$', code: 'C1', name: 'Currency 1' },
+        flags: { ico: 'icon', alt: 'flag', png: 'png', svg: 'svg' },
+        iso3: 'C1C',
+        latitude: 10,
+        longitude: 20,
+        phone_code: '+1',
+        region: 'Region 1',
+        states: [{ name: 'Antofagasta', code: 'AF', country_code: 'C1', latitude: 10, longitude: 20 }],
+        subregion: 'Subregion 1',
+        tld: '.cl',
+      },
+    ];
+
+    jest.spyOn(service, 'getCountryByRegion').mockResolvedValue(result);
+
+    const dto = plainToClass(CountriesQueryDto, { excludeStates: 'true', excludeCities: 'false' });
+    const errors = await validate(dto);
+    const response = await controller.getCountryByRegion('Subregion 1', dto);
+
+    expect(errors.length).toBe(0);
     expect(response).toEqual(result);
   });
 });
