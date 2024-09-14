@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { Country } from '../../../common/schemas/country.schema';
 import { CountryRepository } from './country.repository.interface';
 import { ExcludeOptions } from '../../../common/interfaces/exclude-options.interface';
+import { CountriesQueryDto } from '../../../common/dto/countries-query.dto';
 
 @Injectable()
 export class CountryRepositoryMongo implements CountryRepository {
@@ -33,9 +34,10 @@ export class CountryRepositoryMongo implements CountryRepository {
       projection.states = 0;
     }
 
-    if (options.excludeCities) {
+    if (options.excludeCities || options instanceof CountriesQueryDto) {
       projection.cities = 0;
     }
+
     return projection;
   }
 }

@@ -2,6 +2,7 @@ import { Controller, Get, HttpCode, HttpStatus, Param, Query } from '@nestjs/com
 import { CountriesService } from './countries.service';
 import { CountryDto } from '../../common/dto/country.dto';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CountryQueryDto } from '../../common/dto/country-query.dto';
 import { CountriesQueryDto } from '../../common/dto/countries-query.dto';
 
 @ApiTags('countries')
@@ -20,7 +21,6 @@ export class CountriesController {
       
       **Optional Query Parameters:**
       - \`excludeStates=true\`: *This option is temporarily disabled until we optimize and improve the response size.*
-      - \`excludeCities=true\`: *This option is temporarily disabled until we optimize and improve the response size.*
       
       **Best Practices:**
       We recommend caching the API response to prevent excessive usage and help keep the service public and available 
@@ -53,7 +53,6 @@ export class CountriesController {
   async getAllCountries(@Query() query: CountriesQueryDto): Promise<CountryDto[]> {
     // We are working to optimize the size of the query, in the meantime they will always be excluded
     query.excludeStates = true;
-    query.excludeCities = true;
     return this.service.getAllCountries(query);
   }
 
@@ -116,7 +115,7 @@ export class CountriesController {
     status: 500,
     description: 'Internal Server Error. Please try again later.',
   })
-  async getCountryByName(@Param('name') name: string, @Query() query: CountriesQueryDto): Promise<CountryDto> {
+  async getCountryByName(@Param('name') name: string, @Query() query: CountryQueryDto): Promise<CountryDto> {
     return await this.service.getCountryByName(name, query);
   }
 
@@ -165,7 +164,7 @@ export class CountriesController {
     status: 500,
     description: 'Internal Server Error. Please try again later.',
   })
-  async getCountryByCapital(@Param('capital') capital: string, @Query() query: CountriesQueryDto): Promise<CountryDto> {
+  async getCountryByCapital(@Param('capital') capital: string, @Query() query: CountryQueryDto): Promise<CountryDto> {
     return await this.service.getCountryByCapital(capital, query);
   }
 }

@@ -1,24 +1,4 @@
-import { IsOptional, IsBoolean } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ExcludeOptions } from '../interfaces/exclude-options.interface';
-import { Transform } from 'class-transformer';
+import { OmitType } from '@nestjs/swagger';
+import { CountryQueryDto } from './country-query.dto';
 
-export class CountriesQueryDto implements ExcludeOptions {
-  @ApiPropertyOptional({
-    description: 'Exclude states in the response.',
-    example: 'true',
-  })
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true')
-  excludeStates?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Exclude cities in the response.',
-    example: 'true',
-  })
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true')
-  excludeCities?: boolean;
-}
+export class CountriesQueryDto extends OmitType(CountryQueryDto, ['excludeCities'] as const) {}

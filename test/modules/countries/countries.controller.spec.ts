@@ -4,7 +4,7 @@ import { CountriesController } from '../../../src/modules/countries/countries.co
 import { CountriesService } from '../../../src/modules/countries/countries.service';
 import { CountryDto } from '../../../src/common/dto/country.dto';
 import { plainToInstance } from 'class-transformer';
-import { CountriesQueryDto } from '../../../src/common/dto/countries-query.dto';
+import { CountryQueryDto } from '../../../src/common/dto/country-query.dto';
 
 describe('CountriesController', () => {
   let controller: CountriesController;
@@ -33,7 +33,7 @@ describe('CountriesController', () => {
 
   const mockCountriesList: CountryDto[] = [mockCountryDto];
 
-  const mockQuery: CountriesQueryDto = { excludeStates: false, excludeCities: false };
+  const mockQuery: CountryQueryDto = { excludeStates: false, excludeCities: false };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

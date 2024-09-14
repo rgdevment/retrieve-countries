@@ -1,11 +1,11 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CountriesQueryDto } from '../../../src/common/dto/countries-query.dto';
+import { CountryQueryDto } from '../../../src/common/dto/country-query.dto';
 
-describe('CountriesQueryDto', () => {
+describe('CountryQueryDto', () => {
   it('should transform string values to booleans', async () => {
     const rawQuery = { excludeStates: 'true', excludeCities: 'false' };
-    const dto = plainToInstance(CountriesQueryDto, rawQuery);
+    const dto = plainToInstance(CountryQueryDto, rawQuery);
 
     expect(dto.excludeStates).toBe(true);
     expect(dto.excludeCities).toBe(false);
@@ -16,7 +16,7 @@ describe('CountriesQueryDto', () => {
 
   it('should handle missing values gracefully', async () => {
     const rawQuery = {};
-    const dto = plainToInstance(CountriesQueryDto, rawQuery);
+    const dto = plainToInstance(CountryQueryDto, rawQuery);
 
     expect(dto.excludeStates).toBeUndefined();
     expect(dto.excludeCities).toBeUndefined();
