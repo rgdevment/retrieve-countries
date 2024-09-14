@@ -2,6 +2,7 @@ import { Controller, Get, HttpCode, HttpStatus, Param, Query } from '@nestjs/com
 import { CountriesService } from './countries.service';
 import { CountryDto } from '../../common/dto/country.dto';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CountryQueryDto } from '../../common/dto/country-query.dto';
 import { CountriesQueryDto } from '../../common/dto/countries-query.dto';
 
 @ApiTags('countries')
@@ -16,11 +17,9 @@ export class CountriesController {
     description: `
       Retrieves data for all countries along with their states. 
       Note that obtaining a list of cities in this call is not possible due to the large number of cities globally.
-      Including all cities in the API response is not recommended for either us or the consuming application.
       
       **Optional Query Parameters:**
       - \`excludeStates=true\`: *This option is temporarily disabled until we optimize and improve the response size.*
-      - \`excludeCities=true\`: *This option is temporarily disabled until we optimize and improve the response size.*
       
       **Best Practices:**
       We recommend caching the API response to prevent excessive usage and help keep the service public and available 
@@ -53,8 +52,74 @@ export class CountriesController {
   async getAllCountries(@Query() query: CountriesQueryDto): Promise<CountryDto[]> {
     // We are working to optimize the size of the query, in the meantime they will always be excluded
     query.excludeStates = true;
-    query.excludeCities = true;
     return this.service.getAllCountries(query);
+  }
+
+  @Get('region/:region')
+  @ApiOperation({
+    summary: 'Retrieve countries by region',
+    description: `Fetches a list of countries within a specified region. Optionally, you can exclude states from the 
+                  response using the \`excludeStates\` query parameter. To promote efficient API usage, please consider 
+                  caching the response to minimize unnecessary requests.`,
+  })
+  @ApiParam({
+    name: 'region',
+    description: 'The name of the region to filter countries by (e.g., "Americas", "Europe").',
+    example: 'Americas',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'A list of countries within the specified region.',
+    isArray: true,
+    type: CountryDto,
+    schema: {
+      type: 'array',
+      items: {
+        $ref: '#/components/schemas/CountryDto',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'No content found for the specified region.',
+  })
+  async getCountryByRegion(@Param('region') region: string, @Query() query: CountriesQueryDto): Promise<CountryDto[]> {
+    return await this.service.getCountryByRegion(region, query);
+  }
+
+  @Get('subregion/:subregion')
+  @ApiOperation({
+    summary: 'Retrieve countries by subregion',
+    description: `Fetches a list of countries within a specified subregion. Optionally, you can exclude states from the
+                  response using the \`excludeStates\` query parameter. To promote efficient API usage, please consider 
+                  caching the response to minimize unnecessary requests.`,
+  })
+  @ApiParam({
+    name: 'subregion',
+    description: 'The name of the subregion to filter countries by (e.g., "Southern Europe").',
+    example: 'Southern Europe',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'A list of countries within the specified subregion.',
+    isArray: true,
+    type: CountryDto,
+    schema: {
+      type: 'array',
+      items: {
+        $ref: '#/components/schemas/CountryDto',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'No content found for the specified subregion.',
+  })
+  async getCountryBySubregion(
+    @Param('subregion') subregion: string,
+    @Query() query: CountriesQueryDto,
+  ): Promise<CountryDto[]> {
+    return await this.service.getCountryBySubregion(subregion, query);
   }
 
   @Get(':name')
@@ -103,7 +168,7 @@ export class CountriesController {
     status: 500,
     description: 'Internal Server Error. Please try again later.',
   })
-  async getCountryByName(@Param('name') name: string, @Query() query: CountriesQueryDto): Promise<CountryDto> {
+  async getCountryByName(@Param('name') name: string, @Query() query: CountryQueryDto): Promise<CountryDto> {
     return await this.service.getCountryByName(name, query);
   }
 
@@ -152,7 +217,7 @@ export class CountriesController {
     status: 500,
     description: 'Internal Server Error. Please try again later.',
   })
-  async getCountryByCapital(@Param('capital') capital: string, @Query() query: CountriesQueryDto): Promise<CountryDto> {
+  async getCountryByCapital(@Param('capital') capital: string, @Query() query: CountryQueryDto): Promise<CountryDto> {
     return await this.service.getCountryByCapital(capital, query);
   }
 }

@@ -3,13 +3,37 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { CountriesController } from '../../../src/modules/countries/countries.controller';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
 import { CountryDto } from '../../../src/common/dto/country.dto';
-import { plainToClass, plainToInstance } from 'class-transformer';
-import { CountriesQueryDto } from '../../../src/common/dto/countries-query.dto';
-import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
+import { CountryQueryDto } from '../../../src/common/dto/country-query.dto';
 
 describe('CountriesController', () => {
   let controller: CountriesController;
   let service: CountriesService;
+
+  // Datos de prueba comunes
+  const mockCountry: CountryDto = {
+    name: 'Chile',
+    capital: 'Santiago',
+    code: 'CL',
+    currency: { symbol: 'C$', code: 'CLP', name: 'Chilean Peso' },
+    flags: { ico: 'icon', alt: 'Chile Flag', png: 'png_url', svg: 'svg_url' },
+    iso3: 'CHL',
+    latitude: -35.6751,
+    longitude: -71.543,
+    phone_code: '+56',
+    region: 'Americas',
+    states: [{ name: 'Antofagasta', code: 'AN', country_code: 'CL', latitude: -23.65, longitude: -70.4 }],
+    subregion: 'South America',
+    tld: '.cl',
+  };
+
+  const mockCountryDto = plainToInstance(CountryDto, mockCountry, {
+    excludeExtraneousValues: true,
+  });
+
+  const mockCountriesList: CountryDto[] = [mockCountryDto];
+
+  const mockQuery: CountryQueryDto = { excludeStates: false, excludeCities: false };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -21,6 +45,8 @@ describe('CountriesController', () => {
             getAllCountries: jest.fn(),
             getCountryByName: jest.fn(),
             getCountryByCapital: jest.fn(),
+            getCountryByRegion: jest.fn(),
+            getCountryBySubregion: jest.fn(),
           },
         },
       ],
@@ -32,150 +58,102 @@ describe('CountriesController', () => {
 
   describe('getAllCountries', () => {
     it('should return a list of countries', async () => {
-      const result: CountryDto[] = [
-        {
-          name: 'Chile',
-          capital: 'Santiago',
-          code: 'CL',
-          currency: { symbol: 'C$', code: 'C1', name: 'Currency 1' },
-          flags: { ico: 'icon', alt: 'flag', png: 'png', svg: 'svg' },
-          iso3: 'C1C',
-          latitude: 10,
-          longitude: 20,
-          phone_code: '+1',
-          region: 'Region 1',
-          states: [{ name: 'Antofagasta', code: 'AF', country_code: 'C1', latitude: 10, longitude: 20 }],
-          subregion: 'Subregion 1',
-          tld: '.cl',
-        },
-      ];
+      jest.spyOn(service, 'getAllCountries').mockResolvedValue(mockCountriesList);
 
-      jest.spyOn(service, 'getAllCountries').mockResolvedValue(result);
+      const response = await controller.getAllCountries(mockQuery);
 
-      const dto = plainToClass(CountriesQueryDto, { excludeStates: 'true', excludeCities: 'false' });
-      const errors = await validate(dto);
-      const response = await controller.getAllCountries(dto);
-
-      expect(errors.length).toBe(0);
-      expect(response).toEqual(result);
+      expect(response).toEqual(mockCountriesList);
+      expect(service.getAllCountries).toHaveBeenCalledWith(mockQuery);
     });
 
-    it('should return 204 No Content when no countries are found', async () => {
-      jest.spyOn(service, 'getAllCountries').mockResolvedValue([]);
+    it('should throw No Content exception when no countries are found', async () => {
+      jest.spyOn(service, 'getAllCountries').mockRejectedValue(new HttpException('No content', HttpStatus.NO_CONTENT));
 
-      try {
-        const query: CountriesQueryDto = { excludeStates: true, excludeCities: false };
-        await controller.getAllCountries(query);
-      } catch (e) {
-        if (e instanceof HttpException) {
-          expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
-          expect(e.getResponse()).toBe('No content');
-        } else {
-          fail('Expected an HttpException');
-        }
-      }
+      await expect(controller.getAllCountries(mockQuery)).rejects.toThrowError(
+        new HttpException('No content', HttpStatus.NO_CONTENT),
+      );
     });
   });
 
-  it('should return a country DTO when country is found', async () => {
-    const country = {
-      _id: '1',
-      name: "Cote D'Ivoire (Ivory Coast)",
-      capital: 'Yamoussoukro',
-      code: 'CI',
-      currency: { symbol: 'CFA', code: 'XOF', name: 'West African CFA franc' },
-      flags: { ico: 'ico', alt: 'flag', png: 'png', svg: 'svg' },
-      iso3: 'CIV',
-      latitude: 7.539989,
-      longitude: -5.54708,
-      phone_code: '+225',
-      region: 'Africa',
-      subregion: 'Western Africa',
-      tld: '.ci',
-      cities: [],
-      states: [],
-    };
+  describe('getCountryByName', () => {
+    it('should return a country DTO when country is found', async () => {
+      jest.spyOn(service, 'getCountryByName').mockResolvedValue(mockCountryDto);
 
-    const countryDto: CountryDto = plainToInstance(CountryDto, country, {
-      excludeExtraneousValues: true,
+      const result = await controller.getCountryByName(mockCountry.name, mockQuery);
+
+      expect(result).toEqual(mockCountryDto);
+      expect(service.getCountryByName).toHaveBeenCalledWith(mockCountry.name, mockQuery);
     });
 
-    jest.spyOn(service, 'getCountryByName').mockResolvedValue(countryDto);
-    const query: CountriesQueryDto = { excludeStates: true, excludeCities: true };
-    const result = await controller.getCountryByName("Cote D'Ivoire (Ivory Coast)", query);
-    expect(query.excludeStates).toBe(true);
-    expect(query.excludeCities).toBe(true);
-    expect(result).toEqual(countryDto);
+    it('should throw No Content exception when country is not found', async () => {
+      jest.spyOn(service, 'getCountryByName').mockRejectedValue(new HttpException('No content', HttpStatus.NO_CONTENT));
+
+      await expect(controller.getCountryByName('Nonexistent Country', mockQuery)).rejects.toThrowError(
+        new HttpException('No content', HttpStatus.NO_CONTENT),
+      );
+    });
   });
 
-  it("should return a country DTO when country is found and don't exclude cities", async () => {
-    const country = {
-      _id: '1',
-      name: "Cote D'Ivoire (Ivory Coast)",
-      capital: 'Yamoussoukro',
-      code: 'CI',
-      currency: { symbol: 'CFA', code: 'XOF', name: 'West African CFA franc' },
-      flags: { ico: 'ico', alt: 'flag', png: 'png', svg: 'svg' },
-      iso3: 'CIV',
-      latitude: 7.539989,
-      longitude: -5.54708,
-      phone_code: '+225',
-      region: 'Africa',
-      subregion: 'Western Africa',
-      tld: '.ci',
-      cities: [{ name: 'Antofagasta', state_code: 'AF', country_code: 'C1', latitude: 10, longitude: 20 }],
-      states: [{ name: 'Antofagasta', code: 'AF', country_code: 'C1', latitude: 10, longitude: 20 }],
-    };
+  describe('getCountryByCapital', () => {
+    it('should return a country DTO when country is found by capital', async () => {
+      jest.spyOn(service, 'getCountryByCapital').mockResolvedValue(mockCountryDto);
 
-    const countryDto: CountryDto = plainToInstance(CountryDto, country, {
-      excludeExtraneousValues: true,
+      const result = await controller.getCountryByCapital(mockCountry.capital, mockQuery);
+
+      expect(result).toEqual(mockCountryDto);
+      expect(service.getCountryByCapital).toHaveBeenCalledWith(mockCountry.capital, mockQuery);
     });
 
-    jest.spyOn(service, 'getCountryByName').mockResolvedValue(countryDto);
-    const query: CountriesQueryDto = { excludeStates: false, excludeCities: false };
-    const result = await controller.getCountryByName("Cote D'Ivoire (Ivory Coast)", query);
+    it('should throw No Content exception when capital is not found', async () => {
+      jest
+        .spyOn(service, 'getCountryByCapital')
+        .mockRejectedValue(new HttpException('No content', HttpStatus.NO_CONTENT));
 
-    expect(result).toEqual(countryDto);
+      await expect(controller.getCountryByCapital('Nonexistent Capital', mockQuery)).rejects.toThrowError(
+        new HttpException('No content', HttpStatus.NO_CONTENT),
+      );
+    });
   });
 
-  it('should return No Content status when country is not found', async () => {
-    jest.spyOn(service, 'getCountryByName').mockResolvedValue(null);
+  describe('getCountryByRegion', () => {
+    it('should return a list of countries by region', async () => {
+      jest.spyOn(service, 'getCountryByRegion').mockResolvedValue(mockCountriesList);
 
-    try {
-      const query: CountriesQueryDto = { excludeStates: false, excludeCities: false };
-      await controller.getCountryByName('Nonexistent Country', query);
-    } catch (e) {
-      if (e instanceof HttpException) {
-        expect(e.getStatus()).toBe(HttpStatus.NO_CONTENT);
-        expect(e.getResponse()).toBe('No content');
-      } else {
-        fail('Expected an HttpException');
-      }
-    }
+      const response = await controller.getCountryByRegion(mockCountry.region, mockQuery);
+
+      expect(response).toEqual(mockCountriesList);
+      expect(service.getCountryByRegion).toHaveBeenCalledWith(mockCountry.region, mockQuery);
+    });
+
+    it('should throw No Content exception when region is not found', async () => {
+      jest
+        .spyOn(service, 'getCountryByRegion')
+        .mockRejectedValue(new HttpException('No content', HttpStatus.NO_CONTENT));
+
+      await expect(controller.getCountryByRegion('Nonexistent Region', mockQuery)).rejects.toThrowError(
+        new HttpException('No content', HttpStatus.NO_CONTENT),
+      );
+    });
   });
 
-  it('should return a list of countries by Capital', async () => {
-    const result: CountryDto = {
-      name: 'Chile',
-      capital: 'Santiago',
-      code: 'CL',
-      currency: { symbol: 'C$', code: 'C1', name: 'Currency 1' },
-      flags: { ico: 'icon', alt: 'flag', png: 'png', svg: 'svg' },
-      iso3: 'C1C',
-      latitude: 10,
-      longitude: 20,
-      phone_code: '+1',
-      region: 'Region 1',
-      states: [{ name: 'Antofagasta', code: 'AF', country_code: 'C1', latitude: 10, longitude: 20 }],
-      subregion: 'Subregion 1',
-      tld: '.cl',
-    };
+  describe('getCountryBySubregion', () => {
+    it('should return a list of countries by subregion', async () => {
+      jest.spyOn(service, 'getCountryBySubregion').mockResolvedValue(mockCountriesList);
 
-    jest.spyOn(service, 'getCountryByCapital').mockResolvedValue(result);
-    const query: CountriesQueryDto = { excludeStates: true, excludeCities: true };
-    const response = await controller.getCountryByCapital('SANTIAGO', query);
-    expect(query.excludeStates).toBe(true);
-    expect(query.excludeCities).toBe(true);
-    expect(response).toEqual(result);
+      const response = await controller.getCountryBySubregion(mockCountry.subregion, mockQuery);
+
+      expect(response).toEqual(mockCountriesList);
+      expect(service.getCountryBySubregion).toHaveBeenCalledWith(mockCountry.subregion, mockQuery);
+    });
+
+    it('should throw No Content exception when subregion is not found', async () => {
+      jest
+        .spyOn(service, 'getCountryBySubregion')
+        .mockRejectedValue(new HttpException('No content', HttpStatus.NO_CONTENT));
+
+      await expect(controller.getCountryBySubregion('Nonexistent Subregion', mockQuery)).rejects.toThrowError(
+        new HttpException('No content', HttpStatus.NO_CONTENT),
+      );
+    });
   });
 });
