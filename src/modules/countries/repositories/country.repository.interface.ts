@@ -3,5 +3,6 @@ import { ExcludeOptions } from '../../../common/interfaces/exclude-options.inter
 
 export interface CountryRepository {
   findAll(options: ExcludeOptions): Promise<Country[]>;
-  findByField(field: string, value: string, options: ExcludeOptions): Promise<Country | null>;
+  findOneBy(field: string, value: string, options: ExcludeOptions): Promise<Country | null>;
+  findAllBy(field: string, value: string, options: ExcludeOptions): Promise<Country[]>;
 }

@@ -57,6 +57,19 @@ export class CountriesController {
     return this.service.getAllCountries(query);
   }
 
+  @Get('region/:region')
+  async getCountryByRegion(@Param('region') region: string, @Query() query: CountriesQueryDto): Promise<CountryDto[]> {
+    return await this.service.getCountryByRegion(region, query);
+  }
+
+  @Get('subregion/:subregion')
+  async getCountryBySubregion(
+    @Param('subregion') subregion: string,
+    @Query() query: CountriesQueryDto,
+  ): Promise<CountryDto[]> {
+    return await this.service.getCountryBySubregion(subregion, query);
+  }
+
   @Get(':name')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
