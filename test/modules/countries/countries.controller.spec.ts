@@ -5,7 +5,6 @@ import { CountriesService } from '../../../src/modules/countries/countries.servi
 import { CountryDto } from '../../../src/common/dto/country.dto';
 import { plainToClass, plainToInstance } from 'class-transformer';
 import { CountriesQueryDto } from '../../../src/common/dto/countries-query.dto';
-import { CacheModule } from '@nestjs/cache-manager';
 import { validate } from 'class-validator';
 
 describe('CountriesController', () => {
@@ -14,7 +13,6 @@ describe('CountriesController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [CacheModule.register()],
       controllers: [CountriesController],
       providers: [
         {

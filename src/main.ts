@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { BadRequestException, Logger, ValidationError, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as compression from 'compression';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -15,6 +16,8 @@ async function bootstrap() {
       next();
     }
   });
+
+  app.use(compression({ level: 6, threshold: 2048 }));
 
   app.useGlobalPipes(
     new ValidationPipe({

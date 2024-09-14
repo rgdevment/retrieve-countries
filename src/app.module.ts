@@ -9,15 +9,9 @@ import { CitiesModule } from './modules/cities/cities.module';
 import { StatesModule } from './modules/states/states.module';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { CommandsModule } from './command/command.module';
-import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
-    CacheModule.register({
-      isGlobal: true,
-      ttl: 300,
-      max: 100,
-    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
