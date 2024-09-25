@@ -13,7 +13,7 @@ Retrieve Countries es una API REST de código abierto bajo la licencia MIT que t
 
 ## Documentación
 
-- [Documentación Swagger](https://countries.apirest.cl/api)
+- [Documentación Swagger](https://countries.apirest.cl/v1/docs)
 
 ## Ejemplos de uso
 
