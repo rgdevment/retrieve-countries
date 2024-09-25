@@ -13,7 +13,7 @@ Retrieve Countries is an open-source REST API licensed under MIT that allows you
 
 ## Documentation
 
-- [Swagger Documentation](https://countries.apirest.cl/api)
+- [Swagger Documentation](https://countries.apirest.cl/v1/docs)
 
 ## Usage examples
 
