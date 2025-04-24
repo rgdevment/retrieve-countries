@@ -9,6 +9,8 @@ import { CitiesModule } from './modules/cities/cities.module';
 import { StatesModule } from './modules/states/states.module';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { CommandsModule } from './command/command.module';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { collectDefaultMetrics, Registry } from 'prom-client';
 
 @Module({
   imports: [
@@ -31,6 +33,7 @@ import { CommandsModule } from './command/command.module';
       },
       resolvers: [new HeaderResolver([])],
     }),
+    PrometheusModule.register(),
     CommonModule,
     CountriesModule,
     CitiesModule,
@@ -39,6 +42,15 @@ import { CommandsModule } from './command/command.module';
     CommandsModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: 'PrometheusRegistry',
+      useValue: (() => {
+        const registry = new Registry();
+        collectDefaultMetrics({ register: registry });
+        return registry;
+      })(),
+    },
+  ],
 })
 export class AppModule {}
