@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { BadRequestException, Logger, ValidationError, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Logger, RequestMethod, ValidationError, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as compression from 'compression';
 
@@ -25,7 +25,12 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('v1');
+  app.setGlobalPrefix('v1', {
+    exclude: [
+      { path: 'health', method: RequestMethod.GET },
+      { path: 'metrics', method: RequestMethod.GET },
+    ],
+  });
 
   const config = new DocumentBuilder()
     .setTitle('Retrieve Countries API')
