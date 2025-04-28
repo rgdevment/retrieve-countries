@@ -11,6 +11,7 @@ import { ConfigurationModule } from './configuration/configuration.module';
 import { CommandsModule } from './command/command.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { collectDefaultMetrics, Registry } from 'prom-client';
+import { HealthController } from './common/controller/health.controller';
 
 @Module({
   imports: [
@@ -41,7 +42,7 @@ import { collectDefaultMetrics, Registry } from 'prom-client';
     ConfigurationModule,
     CommandsModule,
   ],
-  controllers: [HeaderResolver],
+  controllers: [HealthController],
   providers: [
     {
       provide: 'PrometheusRegistry',
