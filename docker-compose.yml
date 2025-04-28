@@ -1,7 +1,6 @@
 services:
   retrieve-countries:
     build: ./
-    platform: linux/arm64
     container_name: retrieve-countries
     restart: unless-stopped
     env_file:

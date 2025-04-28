@@ -41,7 +41,7 @@ import { collectDefaultMetrics, Registry } from 'prom-client';
     ConfigurationModule,
     CommandsModule,
   ],
-  controllers: [],
+  controllers: [HeaderResolver],
   providers: [
     {
       provide: 'PrometheusRegistry',
