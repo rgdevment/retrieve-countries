@@ -1,12 +1,15 @@
 # Retrieve Countries (Legacy)
 
-[![Sponsor rgdevment](https://img.shields.io/badge/Sponsor-rgdevment-blue?logo=github)](https://github.com/sponsors/rgdevment)
+El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service)
+
 [![Build CI](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml/badge.svg)](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=rgdevment_retrieve-countries&metric=coverage)](https://sonarcloud.io/dashboard?id=rgdevment_retrieve-countries)
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=rgdevment_retrieve-countries&metric=alert_status)](https://sonarcloud.io/dashboard?id=rgdevment_retrieve-countries)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Retrieve Countries es una API REST de código abierto bajo la licencia MIT que te permite consultar datos sobre países, ciudades y otra información relevante en todo el mundo. Esta API está en continuo desarrollo y crecimiento.
+
+El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service)
 
 ## Disponible en otros idiomas:
 - [English (Inglés)](README.en.md)
