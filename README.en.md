@@ -1,6 +1,18 @@
 # Retrieve Countries (Legacy)
 
-The repository is moved to: [https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
+## ⚠️ This repository has been migrated and archived
+
+This project has been **migrated and improved** as part of a transition to a more stable and maintainable architecture:
+
+- The database was migrated from **MongoDB to MariaDB**, enabling better relationships and performance.
+- The service is now part of a **consolidated monorepo** alongside other open data projects.
+- It runs on a **dedicated, stable server**, allowing us to keep the services **freely and reliably available** to the community.
+
+👉 The updated repository is now located at:  
+🔗 [open-data-service/apps/countries](https://github.com/rgdevment/open-data-service/tree/main/apps/countries)
+
+> This repository will remain as a historical reference, but **will no longer be maintained or updated**.
+
 
 [![Build CI](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml/badge.svg)](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=rgdevment_retrieve-countries&metric=coverage)](https://sonarcloud.io/dashboard?id=rgdevment_retrieve-countries)
@@ -9,7 +21,7 @@ The repository is moved to: [https://github.com/rgdevment/open-data-service](htt
 
 Retrieve Countries is an open-source REST API licensed under MIT that allows you to query data about countries, cities, and other relevant information worldwide. This API is continuously developing and growing.
 
-The repository is moved to: [https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
+The repository is moved to: [open-data-service/apps/countries](https://github.com/rgdevment/open-data-service/tree/main/apps/countries)
 
 ## Available in other languages:
 - [Spanish (Español)](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
