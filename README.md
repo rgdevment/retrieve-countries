@@ -1,6 +1,6 @@
 # Retrieve Countries (Legacy)
 
-El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service)
+El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service]([https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
 
 [![Build CI](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml/badge.svg)](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=rgdevment_retrieve-countries&metric=coverage)](https://sonarcloud.io/dashboard?id=rgdevment_retrieve-countries)
@@ -9,10 +9,10 @@ El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevme
 
 Retrieve Countries es una API REST de código abierto bajo la licencia MIT que te permite consultar datos sobre países, ciudades y otra información relevante en todo el mundo. Esta API está en continuo desarrollo y crecimiento.
 
-El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service)
+El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service]([https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
 
 ## Disponible en otros idiomas:
-- [English (Inglés)](README.en.md)
+- [English (Inglés)]([README.en.md](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md))
 
 ## Documentación
 
@@ -65,22 +65,6 @@ Si quieres probar el proyecto localmente o montarlo en tu propio entorno, sigue 
     - yarn start:dev
 
 Este comando levantará la API en un entorno de desarrollo.
-
-## Donaciones
-
-Este proyecto se mantiene de manera gratuita para todos. Si encuentras útil esta API y deseas apoyar su mantenimiento, puedes contribuir con una donación voluntaria.
-
-Las donaciones se destinarán exclusivamente a cubrir los costos de infraestructura, que incluyen:
-
-- **Google Cloud Run**: Servicio que aloja y ejecuta la API, cubriendo los costos de CPU, memoria y tiempo de ejecución.
-- **Dominio**: Los costos del registro y mantenimiento de los dominios `apirest.cl` y `restapi.cl`.
-- **Almacenamiento**: Si es necesario, los fondos cubrirán los costos de bases de datos externas o servicios de almacenamiento.
-- **Tráfico de red**: Costos adicionales relacionados con el uso de red y la transferencia de datos.
-- **Certificados SSL**: Parte de las donaciones se destinarán a la compra o renovación de certificados SSL para conexiones seguras, si es necesario.
-
-¡Cualquier aporte es bienvenido y ayudará a mantener el servicio activo y disponible para todos!
-
-Considera [ser un patrocinador](https://github.com/sponsors/rgdevment). ¡Gracias por tu apoyo!
 
 ## Licencia
 
