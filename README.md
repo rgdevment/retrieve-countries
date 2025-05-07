@@ -1,6 +1,6 @@
 # Retrieve Countries (Legacy)
 
-El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service]([https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
+El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
 
 [![Build CI](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml/badge.svg)](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=rgdevment_retrieve-countries&metric=coverage)](https://sonarcloud.io/dashboard?id=rgdevment_retrieve-countries)
@@ -9,10 +9,10 @@ El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevme
 
 Retrieve Countries es una API REST de código abierto bajo la licencia MIT que te permite consultar datos sobre países, ciudades y otra información relevante en todo el mundo. Esta API está en continuo desarrollo y crecimiento.
 
-El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service]([https://github.com/rgdevment/open-data-service](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
+El mantenimiento de este repositorio se ha movido a: [https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
 
 ## Disponible en otros idiomas:
-- [English (Inglés)]([README.en.md](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md))
+- [English (Inglés)](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
 
 ## Documentación
 
