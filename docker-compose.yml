@@ -8,7 +8,7 @@ services:
     env_file:
       - .env
     volumes:
-      - sqlite-data:/app/data
+      - ./data:/app/data # SQLite DB from host
     ports:
       - '${PORT:-3000}:3000'
     healthcheck:
@@ -22,6 +22,3 @@ services:
         limits:
           memory: 256M
           cpus: '0.5'
-
-volumes:
-  sqlite-data:
