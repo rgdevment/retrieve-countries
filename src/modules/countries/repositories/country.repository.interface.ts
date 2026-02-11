@@ -1,8 +1,6 @@
-import { CountryRow, StateRow } from '../../../database';
+// ─── API shapes (what the repo returns) ──────────────────────
 
-// ─── Shapes returned by the repository ───────────────────────
-
-export interface CityResult {
+export interface CityRecord {
   name: string;
   state_code: string;
   country_code: string;
@@ -10,22 +8,45 @@ export interface CityResult {
   longitude: number;
 }
 
-export interface StateResult extends Pick<
-  StateRow,
-  'name' | 'iso2' | 'type' | 'country_code' | 'latitude' | 'longitude'
-> {
-  cities: CityResult[];
+export interface StateRecord {
+  name: string;
+  iso2: string;
+  type: string;
+  country_code: string;
+  latitude: number;
+  longitude: number;
+  cities: CityRecord[];
 }
 
-export interface CountryResult {
-  country: CountryRow;
-  states: StateResult[];
+export interface CurrencyRecord {
+  code: string;
+  name: string;
+  symbol: string;
+}
+
+export interface CountryRecord {
+  name: string;
+  iso2: string;
+  iso3: string;
+  numeric_code: string;
+  capital: string;
+  phonecode: string;
+  tld: string;
+  nationality: string;
+  region: string;
+  subregion: string;
+  latitude: number;
+  longitude: number;
+  emoji: string;
+  emojiU: string;
+  currency: CurrencyRecord;
+  states: StateRecord[];
 }
 
 // ─── Repository contract ─────────────────────────────────────
 
 export interface CountryRepository {
-  findAll(): Promise<CountryResult[]>;
-  findByName(name: string): Promise<CountryResult | null>;
-  findStateByName(name: string): Promise<StateResult | null>;
+  findAll(): Promise<CountryRecord[]>;
+  findByName(name: string): Promise<CountryRecord | null>;
+  findStateByName(name: string): Promise<StateRecord | null>;
 }

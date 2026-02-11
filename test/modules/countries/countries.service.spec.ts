@@ -2,44 +2,31 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
 import {
+  CountryRecord,
   CountryRepository,
-  CountryResult,
+  StateRecord,
 } from '../../../src/modules/countries/repositories/country.repository.interface';
 
 describe('CountriesService', () => {
   let service: CountriesService;
   let repository: CountryRepository;
 
-  const mockCountry: CountryResult = {
-    country: {
-      id: 1,
-      name: 'Chile',
-      iso2: 'CL',
-      iso3: 'CHL',
-      numeric_code: '152',
-      phonecode: '+56',
-      capital: 'Santiago',
-      currency: 'CLP',
-      currency_name: 'Chilean Peso',
-      currency_symbol: '$',
-      tld: '.cl',
-      native: 'Chile',
-      region: 'Americas',
-      region_id: 1,
-      subregion: 'South America',
-      subregion_id: 1,
-      nationality: 'Chilean',
-      timezones: null,
-      translations: null,
-      latitude: -35.6751,
-      longitude: -71.543,
-      emoji: '🇨🇱',
-      emojiU: 'U+1F1E8 U+1F1F1',
-      created_at: null,
-      updated_at: '2023-01-01',
-      flag: 1,
-      wikiDataId: null,
-    },
+  const mockCountry: CountryRecord = {
+    name: 'Chile',
+    iso2: 'CL',
+    iso3: 'CHL',
+    numeric_code: '152',
+    capital: 'Santiago',
+    phonecode: '+56',
+    tld: '.cl',
+    nationality: 'Chilean',
+    region: 'Americas',
+    subregion: 'South America',
+    latitude: -35.6751,
+    longitude: -71.543,
+    emoji: '🇨🇱',
+    emojiU: 'U+1F1E8 U+1F1F1',
+    currency: { code: 'CLP', name: 'Chilean Peso', symbol: '$' },
     states: [
       {
         name: 'Antofagasta',
@@ -53,7 +40,7 @@ describe('CountriesService', () => {
     ],
   };
 
-  const mockState = {
+  const mockState: StateRecord = {
     name: 'Antofagasta',
     iso2: 'AN',
     type: 'region',

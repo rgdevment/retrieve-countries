@@ -253,72 +253,41 @@ describe('CountryRepositorySqlite', () => {
   // ── findAll ─────────────────────────────────────────────────
 
   describe('findAll', () => {
-    it('debe retornar todos los países con estados y ciudades anidadas', async () => {
+    it('debe retornar todos los países sin estados ni ciudades (1 query)', async () => {
       const result = await repository.findAll();
 
       expect(result).toHaveLength(2);
-      expect(result.map(r => r.country.name).sort()).toEqual(['Argentina', 'Chile']);
+      expect(result.map(r => r.name).sort()).toEqual(['Argentina', 'Chile']);
 
-      const chile = result.find(r => r.country.iso2 === 'CL')!;
-      expect(chile.states).toHaveLength(1);
-      expect(chile.states[0].name).toBe('Antofagasta');
-      expect(chile.states[0].iso2).toBe('AN');
-      expect(chile.states[0].type).toBe('region');
-      expect(chile.states[0].country_code).toBe('CL');
-      expect(chile.states[0].cities).toHaveLength(1);
-      expect(chile.states[0].cities[0].name).toBe('Calama');
-      expect(chile.states[0].cities[0].state_code).toBe('AN');
-      expect(chile.states[0].cities[0].country_code).toBe('CL');
+      // findAll no carga relaciones → states siempre vacío
+      expect(result.every(r => r.states.length === 0)).toBe(true);
     });
 
-    it('debe retornar currency desde columnas (sin JSON parsing)', async () => {
+    it('debe mapear currency desde columnas separadas', async () => {
       const result = await repository.findAll();
-      const chile = result.find(r => r.country.iso2 === 'CL')!;
+      const chile = result.find(r => r.iso2 === 'CL')!;
 
-      expect(chile.country.currency).toBe('CLP');
-      expect(chile.country.currency_name).toBe('Chilean Peso');
-      expect(chile.country.currency_symbol).toBe('$');
+      expect(chile.currency).toEqual({ code: 'CLP', name: 'Chilean Peso', symbol: '$' });
     });
 
-    it('debe usar batch hydration (3 queries, sin JOINs)', async () => {
+    it('debe mapear campos correctamente', async () => {
       const result = await repository.findAll();
+      const chile = result.find(r => r.iso2 === 'CL')!;
 
-      const chile = result.find(r => r.country.iso2 === 'CL')!;
-      expect(chile.states).toHaveLength(1);
-      expect(chile.states[0].cities).toHaveLength(1);
-
-      const argentina = result.find(r => r.country.iso2 === 'AR')!;
-      expect(argentina.states[0].cities).toHaveLength(1);
-      expect(argentina.states[0].cities[0].name).toBe('La Plata');
+      expect(chile.name).toBe('Chile');
+      expect(chile.iso3).toBe('CHL');
+      expect(chile.nationality).toBe('Chilean');
+      expect(chile.emoji).toBe('🇨🇱');
+      expect(chile.capital).toBe('Santiago');
     });
 
-    it('debe retornar array vacío de estados si el país no tiene', async () => {
-      await db
-        .insertInto('countries')
-        .values({
-          name: 'Uruguay',
-          iso2: 'UY',
-          iso3: 'URY',
-          numeric_code: '858',
-          phonecode: '+598',
-          capital: 'Montevideo',
-          tld: '.uy',
-          region: 'Americas',
-          region_id: 1,
-          subregion: 'South America',
-          subregion_id: 1,
-          nationality: 'Uruguayan',
-          latitude: -32.52,
-          longitude: -55.77,
-          updated_at: '2023-01-01',
-          flag: 1,
-        })
-        .execute();
+    it('debe retornar array vacío cuando no hay países', async () => {
+      await sql`DELETE FROM cities`.execute(db);
+      await sql`DELETE FROM states`.execute(db);
+      await sql`DELETE FROM countries`.execute(db);
 
       const result = await repository.findAll();
-      const uruguay = result.find(r => r.country.iso2 === 'UY')!;
-
-      expect(uruguay.states).toEqual([]);
+      expect(result).toEqual([]);
     });
   });
 
@@ -329,8 +298,8 @@ describe('CountryRepositorySqlite', () => {
       const result = await repository.findByName('Chile');
 
       expect(result).not.toBeNull();
-      expect(result!.country.iso2).toBe('CL');
-      expect(result!.country.emoji).toBe('🇨🇱');
+      expect(result!.iso2).toBe('CL');
+      expect(result!.emoji).toBe('🇨🇱');
       expect(result!.states).toHaveLength(1);
       expect(result!.states[0].name).toBe('Antofagasta');
       expect(result!.states[0].cities).toHaveLength(1);
@@ -342,7 +311,7 @@ describe('CountryRepositorySqlite', () => {
       const mixed = await repository.findByName('cHiLe');
 
       expect(lower).not.toBeNull();
-      expect(lower!.country.name).toBe('Chile');
+      expect(lower!.name).toBe('Chile');
       expect(upper).not.toBeNull();
       expect(mixed).not.toBeNull();
     });

@@ -1,4 +1,4 @@
-import { BadRequestException, Logger, RequestMethod, ValidationError, ValidationPipe } from '@nestjs/common';
+import { Logger, RequestMethod } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
@@ -10,21 +10,6 @@ async function bootstrap() {
   });
 
   app.use(compression({ level: 6, threshold: 2048 }));
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      exceptionFactory: (errors: ValidationError[]) => {
-        const messages = errors.map(
-          error =>
-            `${error.property} has wrong value ${error.value}, ${Object.values(error.constraints ?? {}).join(', ')}`,
-        );
-        return new BadRequestException(messages);
-      },
-    }),
-  );
 
   app.setGlobalPrefix('v1', {
     exclude: [{ path: 'health', method: RequestMethod.GET }],

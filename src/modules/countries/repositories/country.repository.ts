@@ -1,134 +1,103 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Kysely } from 'kysely';
-import { CountryRow, Database, DATABASE_TOKEN } from '../../../database';
-import { CityResult, CountryRepository, CountryResult, StateResult } from './country.repository.interface';
+import { CountryRow, Database, DATABASE_TOKEN, StateRow } from '../../../database';
+import { CityRecord, CountryRecord, CountryRepository, StateRecord } from './country.repository.interface';
 
 @Injectable()
 export class CountryRepositorySqlite implements CountryRepository {
   constructor(@Inject(DATABASE_TOKEN) private readonly db: Kysely<Database>) {}
 
-  async findAll(): Promise<CountryResult[]> {
+  /** List — 1 query, no states/cities. */
+  async findAll(): Promise<CountryRecord[]> {
     const rows = await this.db.selectFrom('countries').selectAll().execute();
-    return this.hydrateMany(rows);
+    return rows.map(r => this.toCountry(r, []));
   }
 
-  async findByName(name: string): Promise<CountryResult | null> {
+  /** Detail — 3 queries (country + states + cities). */
+  async findByName(name: string): Promise<CountryRecord | null> {
     const row = await this.db.selectFrom('countries').selectAll().where('name', '=', name).executeTakeFirst();
+
     if (!row) return null;
 
-    const states = await this.loadRelationsForCountry(row.id);
-    return { country: row, states };
+    const states = await this.loadStates(row.id);
+    return this.toCountry(row, states);
   }
 
-  async findStateByName(name: string): Promise<StateResult | null> {
-    const state = await this.db.selectFrom('states').selectAll().where('name', '=', name).executeTakeFirst();
-    if (!state) return null;
+  /** State detail — 2 queries (state + cities). */
+  async findStateByName(name: string): Promise<StateRecord | null> {
+    const row = await this.db.selectFrom('states').selectAll().where('name', '=', name).executeTakeFirst();
 
-    // Direct query — state_code/country_code are on the cities table, no JOIN needed
-    const cities = await this.db
-      .selectFrom('cities')
-      .select(['name', 'state_code', 'country_code', 'latitude', 'longitude'])
-      .where('state_id', '=', state.id)
-      .execute();
+    if (!row) return null;
 
-    return {
-      name: state.name,
-      iso2: state.iso2,
-      type: state.type,
-      country_code: state.country_code,
-      latitude: state.latitude,
-      longitude: state.longitude,
-      cities,
-    };
+    const cities = await this.loadCities([row.id]);
+    return this.toState(row, cities.get(row.id) ?? []);
   }
 
-  // ── Batch hydration (3 queries total, avoids N+1) ───────────
+  // ── Loaders ─────────────────────────────────────────────────
 
-  private async hydrateMany(rows: CountryRow[]): Promise<CountryResult[]> {
+  private async loadStates(countryId: number): Promise<StateRecord[]> {
+    const rows = await this.db.selectFrom('states').selectAll().where('country_id', '=', countryId).execute();
+
     if (!rows.length) return [];
 
-    const countryIds = rows.map(r => r.id);
-
-    // 1 query → all states
-    const allStates = await this.db.selectFrom('states').selectAll().where('country_id', 'in', countryIds).execute();
-
-    // 1 query → all cities — NO JOIN needed, state_code is denormalized
-    const allCities = await this.db
-      .selectFrom('cities')
-      .select(['name', 'state_code', 'country_code', 'latitude', 'longitude', 'state_id'])
-      .where('country_id', 'in', countryIds)
-      .execute();
-
-    // Group cities by state_id
-    const citiesByState = new Map<number, CityResult[]>();
-    for (const c of allCities) {
-      const list = citiesByState.get(c.state_id) ?? [];
-      list.push({
-        name: c.name,
-        state_code: c.state_code,
-        country_code: c.country_code,
-        latitude: c.latitude,
-        longitude: c.longitude,
-      });
-      citiesByState.set(c.state_id, list);
-    }
-
-    // Group states by country_id, attach their cities
-    const statesByCountry = new Map<number, StateResult[]>();
-    for (const s of allStates) {
-      const list = statesByCountry.get(s.country_id) ?? [];
-      list.push({
-        name: s.name,
-        iso2: s.iso2,
-        type: s.type,
-        country_code: s.country_code,
-        latitude: s.latitude,
-        longitude: s.longitude,
-        cities: citiesByState.get(s.id) ?? [],
-      });
-      statesByCountry.set(s.country_id, list);
-    }
-
-    return rows.map(row => ({ country: row, states: statesByCountry.get(row.id) ?? [] }));
+    const cities = await this.loadCities(rows.map(s => s.id));
+    return rows.map(s => this.toState(s, cities.get(s.id) ?? []));
   }
 
-  // ── Single-country batch loader (2 queries, no N+1) ─────────
-
-  private async loadRelationsForCountry(countryId: number): Promise<StateResult[]> {
-    const stateRows = await this.db.selectFrom('states').selectAll().where('country_id', '=', countryId).execute();
-
-    if (!stateRows.length) return [];
-
-    const stateIds = stateRows.map(s => s.id);
-
-    // 1 query for all cities of all states — no JOIN
-    const cityRows = await this.db
+  private async loadCities(stateIds: number[]): Promise<Map<number, CityRecord[]>> {
+    const rows = await this.db
       .selectFrom('cities')
       .select(['name', 'state_code', 'country_code', 'latitude', 'longitude', 'state_id'])
       .where('state_id', 'in', stateIds)
       .execute();
 
-    const citiesByState = new Map<number, CityResult[]>();
-    for (const c of cityRows) {
-      const list = citiesByState.get(c.state_id) ?? [];
+    const map = new Map<number, CityRecord[]>();
+    for (const r of rows) {
+      const list = map.get(r.state_id) ?? [];
       list.push({
-        name: c.name,
-        state_code: c.state_code,
-        country_code: c.country_code,
-        latitude: c.latitude,
-        longitude: c.longitude,
+        name: r.name,
+        state_code: r.state_code,
+        country_code: r.country_code,
+        latitude: r.latitude,
+        longitude: r.longitude,
       });
-      citiesByState.set(c.state_id, list);
+      map.set(r.state_id, list);
     }
+    return map;
+  }
 
-    return stateRows.map(s => ({
-      name: s.name,
-      iso2: s.iso2,
-      type: s.type,
-      country_code: s.country_code,
-      latitude: s.latitude,
-      longitude: s.longitude,
-      cities: citiesByState.get(s.id) ?? [],
-    }));
+  // ── Mappers (DB row → API record) ───────────────────────────
+
+  private toCountry(r: CountryRow, states: StateRecord[]): CountryRecord {
+    return {
+      name: r.name,
+      iso2: r.iso2 ?? '',
+      iso3: r.iso3 ?? '',
+      numeric_code: r.numeric_code ?? '',
+      capital: r.capital ?? '',
+      phonecode: r.phonecode ?? '',
+      tld: r.tld ?? '',
+      nationality: r.nationality ?? '',
+      region: r.region ?? '',
+      subregion: r.subregion ?? '',
+      latitude: r.latitude ?? 0,
+      longitude: r.longitude ?? 0,
+      emoji: r.emoji ?? '',
+      emojiU: r.emojiU ?? '',
+      currency: { code: r.currency ?? '', name: r.currency_name ?? '', symbol: r.currency_symbol ?? '' },
+      states,
+    };
+  }
+
+  private toState(r: StateRow, cities: CityRecord[]): StateRecord {
+    return {
+      name: r.name,
+      iso2: r.iso2 ?? '',
+      type: r.type ?? '',
+      country_code: r.country_code,
+      latitude: r.latitude ?? 0,
+      longitude: r.longitude ?? 0,
+      cities,
+    };
   }
 }
