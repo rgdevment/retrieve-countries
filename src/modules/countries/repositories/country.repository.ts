@@ -71,20 +71,20 @@ export class CountryRepositorySqlite implements CountryRepository {
   private toCountry(r: CountryRow, states: StateRecord[]): CountryRecord {
     return {
       name: r.name,
-      iso2: r.iso2 ?? '',
-      iso3: r.iso3 ?? '',
-      numeric_code: r.numeric_code ?? '',
-      capital: r.capital ?? '',
-      phonecode: r.phonecode ?? '',
-      tld: r.tld ?? '',
-      nationality: r.nationality ?? '',
-      region: r.region ?? '',
-      subregion: r.subregion ?? '',
-      latitude: r.latitude ?? 0,
-      longitude: r.longitude ?? 0,
-      emoji: r.emoji ?? '',
-      emojiU: r.emojiU ?? '',
-      currency: { code: r.currency ?? '', name: r.currency_name ?? '', symbol: r.currency_symbol ?? '' },
+      iso2: s(r.iso2),
+      iso3: s(r.iso3),
+      numeric_code: s(r.numeric_code),
+      capital: s(r.capital),
+      phonecode: s(r.phonecode),
+      tld: s(r.tld),
+      nationality: s(r.nationality),
+      region: s(r.region),
+      subregion: s(r.subregion),
+      latitude: n(r.latitude),
+      longitude: n(r.longitude),
+      emoji: s(r.emoji),
+      emojiU: s(r.emojiU),
+      currency: { code: s(r.currency), name: s(r.currency_name), symbol: s(r.currency_symbol) },
       states,
     };
   }
@@ -92,12 +92,17 @@ export class CountryRepositorySqlite implements CountryRepository {
   private toState(r: StateRow, cities: CityRecord[]): StateRecord {
     return {
       name: r.name,
-      iso2: r.iso2 ?? '',
-      type: r.type ?? '',
+      iso2: s(r.iso2),
+      type: s(r.type),
       country_code: r.country_code,
-      latitude: r.latitude ?? 0,
-      longitude: r.longitude ?? 0,
+      latitude: n(r.latitude),
+      longitude: n(r.longitude),
       cities,
     };
   }
 }
+
+// ── Null coalescing helpers ─────────────────────────────────
+
+const s = (v: string | null): string => v ?? '';
+const n = (v: number | null): number => v ?? 0;
