@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CityDto {
-  @ApiProperty({ example: 'Calama' })
+  @ApiProperty({ example: 'Antofagasta' })
   readonly name!: string;
 
   @ApiProperty({ example: 'AN' })
@@ -15,4 +15,7 @@ export class CityDto {
 
   @ApiProperty({ example: -68.93 })
   readonly longitude!: number;
+
+  @ApiProperty({ example: 'Q180694' })
+  readonly wikiDataId!: string;
 }

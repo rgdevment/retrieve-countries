@@ -1,6 +1,5 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { CountryDto } from './dto/country.dto';
-import { StateDto } from './dto/state.dto';
+import { CountryEntity } from './entities';
 import { CountryRepository } from './repositories/country.repository.interface';
 
 @Injectable()
@@ -10,21 +9,21 @@ export class CountriesService {
     private readonly repo: CountryRepository,
   ) {}
 
-  async getAllCountries(): Promise<CountryDto[]> {
+  async getAllCountries(): Promise<CountryEntity[]> {
     const countries = await this.repo.findAll();
     if (!countries.length) throw new HttpException('No content', HttpStatus.NO_CONTENT);
     return countries;
   }
 
-  async getCountryByName(name: string): Promise<CountryDto> {
+  async getCountryByName(name: string): Promise<CountryEntity> {
     const country = await this.repo.findByName(name);
     if (!country) throw new HttpException('No content', HttpStatus.NO_CONTENT);
     return country;
   }
 
-  async getStateByName(name: string): Promise<StateDto> {
-    const state = await this.repo.findStateByName(name);
-    if (!state) throw new HttpException('No content', HttpStatus.NO_CONTENT);
-    return state;
+  async getCountryByStateName(name: string): Promise<CountryEntity> {
+    const country = await this.repo.findCountryByStateName(name);
+    if (!country) throw new HttpException('No content', HttpStatus.NO_CONTENT);
+    return country;
   }
 }

@@ -17,7 +17,11 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Retrieve Countries API')
-    .setDescription('REST API to retrieve countries, states, and cities data')
+    .setDescription(
+      'API REST para consultar información de países, estados/regiones y ciudades del mundo. ' +
+        'Soporta búsqueda insensible a mayúsculas y acentos (e.g., "mexico" encuentra "México"). ' +
+        'Los datos incluyen moneda, zona horaria, coordenadas y más.',
+    )
     .setVersion('1.0')
     .setLicense('MIT', 'https://opensource.org/licenses/MIT')
     .build();

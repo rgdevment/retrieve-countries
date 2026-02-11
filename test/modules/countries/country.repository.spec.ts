@@ -253,14 +253,22 @@ describe('CountryRepositorySqlite', () => {
   // ── findAll ─────────────────────────────────────────────────
 
   describe('findAll', () => {
-    it('debe retornar todos los países sin estados ni ciudades (1 query)', async () => {
+    it('debe retornar todos los países con estados y ciudades', async () => {
       const result = await repository.findAll();
 
       expect(result).toHaveLength(2);
       expect(result.map(r => r.name).sort()).toEqual(['Argentina', 'Chile']);
 
-      // findAll no carga relaciones → states siempre vacío
-      expect(result.every(r => r.states.length === 0)).toBe(true);
+      const chile = result.find(r => r.name === 'Chile')!;
+      expect(chile.states).toHaveLength(1);
+      expect(chile.states[0].name).toBe('Antofagasta');
+      expect(chile.states[0].cities).toHaveLength(1);
+      expect(chile.states[0].cities[0].name).toBe('Calama');
+
+      const argentina = result.find(r => r.name === 'Argentina')!;
+      expect(argentina.states).toHaveLength(1);
+      expect(argentina.states[0].name).toBe('Buenos Aires');
+      expect(argentina.states[0].cities).toHaveLength(1);
     });
 
     it('debe mapear currency desde columnas separadas', async () => {
@@ -289,6 +297,15 @@ describe('CountryRepositorySqlite', () => {
       const result = await repository.findAll();
       expect(result).toEqual([]);
     });
+
+    it('debe retornar países con states vacío cuando no hay estados', async () => {
+      await sql`DELETE FROM cities`.execute(db);
+      await sql`DELETE FROM states`.execute(db);
+
+      const result = await repository.findAll();
+      expect(result).toHaveLength(2);
+      expect(result.every(r => r.states.length === 0)).toBe(true);
+    });
   });
 
   // ── findByName ──────────────────────────────────────────────
@@ -305,7 +322,7 @@ describe('CountryRepositorySqlite', () => {
       expect(result!.states[0].cities).toHaveLength(1);
     });
 
-    it('debe ser case-insensitive (COLLATE NOCASE)', async () => {
+    it('debe ser case-insensitive', async () => {
       const lower = await repository.findByName('chile');
       const upper = await repository.findByName('CHILE');
       const mixed = await repository.findByName('cHiLe');
@@ -316,12 +333,54 @@ describe('CountryRepositorySqlite', () => {
       expect(mixed).not.toBeNull();
     });
 
+    it('debe ser accent-insensitive (ignorar diacríticos)', async () => {
+      // Insertar país con acento
+      await db
+        .insertInto('countries')
+        .values({
+          name: 'México',
+          iso2: 'MX',
+          iso3: 'MEX',
+          numeric_code: '484',
+          phonecode: '+52',
+          capital: 'Ciudad de México',
+          currency: 'MXN',
+          currency_name: 'Mexican Peso',
+          currency_symbol: '$',
+          tld: '.mx',
+          native: 'México',
+          region: 'Americas',
+          region_id: 1,
+          subregion: 'South America',
+          subregion_id: 1,
+          nationality: 'Mexican',
+          latitude: 23.6345,
+          longitude: -102.5528,
+          emoji: '🇲🇽',
+          emojiU: 'U+1F1F2 U+1F1FD',
+          updated_at: '2023-01-01',
+          flag: 1,
+        })
+        .execute();
+
+      const result = await repository.findByName('Mexico');
+      expect(result).not.toBeNull();
+      expect(result!.name).toBe('México');
+      expect(result!.iso2).toBe('MX');
+    });
+
     it('debe retornar null cuando no existe', async () => {
       const result = await repository.findByName('Narnia');
       expect(result).toBeNull();
     });
 
-    it('debe cargar relaciones en batch (2 queries, no N+1)', async () => {
+    it('debe encontrar por coincidencia parcial (starts-with)', async () => {
+      const result = await repository.findByName('Chi');
+      expect(result).not.toBeNull();
+      expect(result!.name).toBe('Chile');
+    });
+
+    it('debe cargar relaciones en batch (no N+1)', async () => {
       const result = await repository.findByName('Chile');
 
       expect(result!.states).toHaveLength(1);
@@ -331,63 +390,93 @@ describe('CountryRepositorySqlite', () => {
     });
   });
 
-  // ── findStateByName ─────────────────────────────────────────
+  // ── findCountryByStateName ──────────────────────────────────
 
-  describe('findStateByName', () => {
-    it('debe encontrar un estado con sus ciudades', async () => {
-      const result = await repository.findStateByName('Antofagasta');
+  describe('findCountryByStateName', () => {
+    it('debe retornar el país que contiene el estado buscado', async () => {
+      const result = await repository.findCountryByStateName('Antofagasta');
 
       expect(result).not.toBeNull();
-      expect(result!.name).toBe('Antofagasta');
-      expect(result!.iso2).toBe('AN');
-      expect(result!.type).toBe('region');
-      expect(result!.country_code).toBe('CL');
-      expect(result!.latitude).toBe(-23.65);
-      expect(result!.longitude).toBe(-70.4);
-      expect(result!.cities).toHaveLength(1);
-      expect(result!.cities[0]).toEqual({
-        name: 'Calama',
-        state_code: 'AN',
-        country_code: 'CL',
-        latitude: -22.46,
-        longitude: -68.93,
-      });
+      expect(result!.name).toBe('Chile');
+      expect(result!.iso2).toBe('CL');
+      expect(result!.states).toHaveLength(1);
+      expect(result!.states[0].name).toBe('Antofagasta');
+      expect(result!.states[0].cities).toHaveLength(1);
+      expect(result!.states[0].cities[0].name).toBe('Calama');
     });
 
-    it('debe ser case-insensitive (COLLATE NOCASE)', async () => {
-      const lower = await repository.findStateByName('antofagasta');
-      const upper = await repository.findStateByName('ANTOFAGASTA');
+    it('debe ser case-insensitive', async () => {
+      const lower = await repository.findCountryByStateName('antofagasta');
+      const upper = await repository.findCountryByStateName('ANTOFAGASTA');
 
       expect(lower).not.toBeNull();
-      expect(lower!.name).toBe('Antofagasta');
+      expect(lower!.name).toBe('Chile');
       expect(upper).not.toBeNull();
+      expect(upper!.name).toBe('Chile');
     });
 
-    it('debe retornar null cuando el estado no existe', async () => {
-      const result = await repository.findStateByName('Inventado');
-      expect(result).toBeNull();
-    });
-
-    it('debe retornar array vacío de ciudades si el estado no tiene', async () => {
+    it('debe ser accent-insensitive', async () => {
+      // Insertar estado con acento
       await db
-        .insertInto('states')
+        .insertInto('countries')
         .values({
-          name: 'Atacama',
-          country_id: 1,
-          country_code: 'CL',
-          iso2: 'AT',
-          type: 'region',
-          latitude: -27.36,
-          longitude: -70.33,
+          name: 'España',
+          iso2: 'ES',
+          iso3: 'ESP',
+          numeric_code: '724',
+          phonecode: '+34',
+          capital: 'Madrid',
+          currency: 'EUR',
+          currency_name: 'Euro',
+          currency_symbol: '€',
+          tld: '.es',
+          native: 'España',
+          region: 'Europe',
+          region_id: 1,
+          subregion: 'South America',
+          subregion_id: 1,
+          nationality: 'Spanish',
+          latitude: 40.4637,
+          longitude: -3.7492,
+          emoji: '🇪🇸',
+          emojiU: 'U+1F1EA U+1F1F8',
           updated_at: '2023-01-01',
           flag: 1,
         })
         .execute();
 
-      const result = await repository.findStateByName('Atacama');
+      await db
+        .insertInto('states')
+        .values({
+          name: 'Aragón',
+          country_id: 3,
+          country_code: 'ES',
+          iso2: 'AR',
+          type: 'community',
+          latitude: 41.6,
+          longitude: -0.88,
+          updated_at: '2023-01-01',
+          flag: 1,
+        })
+        .execute();
 
+      const result = await repository.findCountryByStateName('Aragon');
       expect(result).not.toBeNull();
-      expect(result!.cities).toEqual([]);
+      expect(result!.name).toBe('España');
+    });
+
+    it('debe retornar null cuando el estado no existe', async () => {
+      const result = await repository.findCountryByStateName('Inventado');
+      expect(result).toBeNull();
+    });
+
+    it('debe retornar el país correcto con Buenos Aires', async () => {
+      const result = await repository.findCountryByStateName('buenos aires');
+      expect(result).not.toBeNull();
+      expect(result!.name).toBe('Argentina');
+      expect(result!.states).toHaveLength(1);
+      expect(result!.states[0].cities).toHaveLength(1);
+      expect(result!.states[0].cities[0].name).toBe('La Plata');
     });
   });
 });

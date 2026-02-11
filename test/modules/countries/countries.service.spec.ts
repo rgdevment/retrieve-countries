@@ -1,17 +1,14 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
-import {
-  CountryRecord,
-  CountryRepository,
-  StateRecord,
-} from '../../../src/modules/countries/repositories/country.repository.interface';
+import { CountryEntity } from '../../../src/modules/countries/entities';
+import { CountryRepository } from '../../../src/modules/countries/repositories/country.repository.interface';
 
 describe('CountriesService', () => {
   let service: CountriesService;
   let repository: CountryRepository;
 
-  const mockCountry: CountryRecord = {
+  const mockCountry: CountryEntity = {
     name: 'Chile',
     iso2: 'CL',
     iso3: 'CHL',
@@ -19,13 +16,17 @@ describe('CountriesService', () => {
     capital: 'Santiago',
     phonecode: '+56',
     tld: '.cl',
+    native: 'Chile',
     nationality: 'Chilean',
-    region: 'Americas',
-    subregion: 'South America',
+    region: { name: 'Americas', translations: null, wikiDataId: '' },
+    subregion: { name: 'South America', translations: null, wikiDataId: '' },
     latitude: -35.6751,
     longitude: -71.543,
     emoji: '🇨🇱',
     emojiU: 'U+1F1E8 U+1F1F1',
+    timezones: [],
+    translations: null,
+    wikiDataId: '',
     currency: { code: 'CLP', name: 'Chilean Peso', symbol: '$' },
     states: [
       {
@@ -33,21 +34,16 @@ describe('CountriesService', () => {
         iso2: 'AN',
         type: 'region',
         country_code: 'CL',
+        fips_code: '',
+        level: null,
+        parent_id: null,
+        native: '',
         latitude: -23.65,
         longitude: -70.4,
+        wikiDataId: '',
         cities: [],
       },
     ],
-  };
-
-  const mockState: StateRecord = {
-    name: 'Antofagasta',
-    iso2: 'AN',
-    type: 'region',
-    country_code: 'CL',
-    latitude: -23.65,
-    longitude: -70.4,
-    cities: [],
   };
 
   beforeEach(async () => {
@@ -59,7 +55,7 @@ describe('CountriesService', () => {
           useValue: {
             findAll: jest.fn(),
             findByName: jest.fn(),
-            findStateByName: jest.fn(),
+            findCountryByStateName: jest.fn(),
           },
         },
       ],
@@ -112,20 +108,21 @@ describe('CountriesService', () => {
     });
   });
 
-  describe('getStateByName', () => {
-    it('should return a state DTO when found', async () => {
-      jest.spyOn(repository, 'findStateByName').mockResolvedValue(mockState);
+  describe('getCountryByStateName', () => {
+    it('should return the country containing the state', async () => {
+      jest.spyOn(repository, 'findCountryByStateName').mockResolvedValue(mockCountry);
 
-      const result = await service.getStateByName('Antofagasta');
+      const result = await service.getCountryByStateName('Antofagasta');
 
-      expect(result.name).toBe('Antofagasta');
-      expect(result.iso2).toBe('AN');
-      expect(result.country_code).toBe('CL');
+      expect(result.name).toBe('Chile');
+      expect(result.iso2).toBe('CL');
+      expect(result.states).toHaveLength(1);
+      expect(result.states[0].name).toBe('Antofagasta');
     });
 
     it('should throw NO_CONTENT when not found', async () => {
-      jest.spyOn(repository, 'findStateByName').mockResolvedValue(null);
-      await expectNoContent(() => service.getStateByName('Unknown'));
+      jest.spyOn(repository, 'findCountryByStateName').mockResolvedValue(null);
+      await expectNoContent(() => service.getCountryByStateName('Unknown'));
     });
   });
 });

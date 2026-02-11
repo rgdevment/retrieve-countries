@@ -3,28 +3,31 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CountriesController } from '../../../src/modules/countries/countries.controller';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
-import { CountryDto } from '../../../src/modules/countries/dto/country.dto';
-import { StateDto } from '../../../src/modules/countries/dto/state.dto';
+import { CountryEntity } from '../../../src/modules/countries/entities';
 
 describe('CountriesController', () => {
   let controller: CountriesController;
   let service: CountriesService;
 
-  const mockCountryDto: CountryDto = {
+  const mockCountryDto: CountryEntity = {
     name: 'Chile',
     iso2: 'CL',
     iso3: 'CHL',
     numeric_code: '152',
     capital: 'Santiago',
     phonecode: '56',
+    tld: '.cl',
+    native: 'Chile',
     nationality: 'Chilean',
-    region: 'Americas',
-    subregion: 'South America',
+    region: { name: 'Americas', translations: null, wikiDataId: '' },
+    subregion: { name: 'South America', translations: null, wikiDataId: '' },
     latitude: -35.6751,
     longitude: -71.543,
-    tld: '.cl',
     emoji: '🇨🇱',
     emojiU: 'U+1F1E8 U+1F1F1',
+    timezones: [],
+    translations: null,
+    wikiDataId: '',
     currency: { code: 'CLP', name: 'Chilean Peso', symbol: '$' },
     states: [
       {
@@ -32,21 +35,18 @@ describe('CountriesController', () => {
         iso2: 'AN',
         type: 'region',
         country_code: 'CL',
+        fips_code: '',
+        level: null,
+        parent_id: null,
+        native: '',
         latitude: -23.65,
         longitude: -70.4,
-        cities: [],
+        wikiDataId: '',
+        cities: [
+          { name: 'Calama', state_code: 'AN', country_code: 'CL', latitude: -22.46, longitude: -68.93, wikiDataId: '' },
+        ],
       },
     ],
-  };
-
-  const mockStateDto: StateDto = {
-    name: 'Antofagasta',
-    iso2: 'AN',
-    type: 'region',
-    country_code: 'CL',
-    latitude: -23.65,
-    longitude: -70.4,
-    cities: [{ name: 'Calama', state_code: 'AN', country_code: 'CL', latitude: -22.46, longitude: -68.93 }],
   };
 
   beforeEach(async () => {
@@ -59,7 +59,7 @@ describe('CountriesController', () => {
           useValue: {
             getAllCountries: jest.fn(),
             getCountryByName: jest.fn(),
-            getStateByName: jest.fn(),
+            getCountryByStateName: jest.fn(),
           },
         },
       ],
@@ -70,12 +70,14 @@ describe('CountriesController', () => {
   });
 
   describe('getAllCountries', () => {
-    it('should return all countries', async () => {
+    it('should return all countries with states and cities', async () => {
       jest.spyOn(service, 'getAllCountries').mockResolvedValue([mockCountryDto]);
 
       const result = await controller.getAllCountries();
 
       expect(result).toEqual([mockCountryDto]);
+      expect(result[0].states).toHaveLength(1);
+      expect(result[0].states[0].cities).toHaveLength(1);
     });
 
     it('should propagate NO_CONTENT', async () => {
@@ -100,19 +102,22 @@ describe('CountriesController', () => {
     });
   });
 
-  describe('getStateByName', () => {
-    it('should return a state with cities', async () => {
-      jest.spyOn(service, 'getStateByName').mockResolvedValue(mockStateDto);
+  describe('getCountryByStateName', () => {
+    it('should return the country containing the state', async () => {
+      jest.spyOn(service, 'getCountryByStateName').mockResolvedValue(mockCountryDto);
 
-      const result = await controller.getStateByName('Antofagasta');
+      const result = await controller.getCountryByStateName('Antofagasta');
 
-      expect(result).toEqual(mockStateDto);
-      expect(service.getStateByName).toHaveBeenCalledWith('Antofagasta');
+      expect(result).toEqual(mockCountryDto);
+      expect(result.states).toHaveLength(1);
+      expect(service.getCountryByStateName).toHaveBeenCalledWith('Antofagasta');
     });
 
     it('should propagate NO_CONTENT', async () => {
-      jest.spyOn(service, 'getStateByName').mockRejectedValue(new HttpException('No content', HttpStatus.NO_CONTENT));
-      await expect(controller.getStateByName('Unknown')).rejects.toThrow(HttpException);
+      jest
+        .spyOn(service, 'getCountryByStateName')
+        .mockRejectedValue(new HttpException('No content', HttpStatus.NO_CONTENT));
+      await expect(controller.getCountryByStateName('Unknown')).rejects.toThrow(HttpException);
     });
   });
 });

@@ -1,108 +1,127 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Kysely } from 'kysely';
-import { CountryRow, Database, DATABASE_TOKEN, StateRow } from '../../../database';
-import { CityRecord, CountryRecord, CountryRepository, StateRecord } from './country.repository.interface';
+import { Database, DATABASE_TOKEN } from '../../../database';
+import { CountryEntity, RegionEntity, StateEntity, SubregionEntity } from '../entities';
+import { bestMatch } from '../helpers/normalize';
+import { toCountryEntity, toRegionEntity, toStateEntity, toSubregionEntity } from '../mappers/country.mapper';
+import {
+  selectAllCountries,
+  selectAllRegions,
+  selectAllStates,
+  selectAllSubregions,
+  selectCitiesByStateIds,
+  selectCountryById,
+  selectCountryNamesForSearch,
+  selectStateNamesForSearch,
+  selectStatesByCountryId,
+} from '../queries/country.queries';
+import { CountryRepository } from './country.repository.interface';
 
 @Injectable()
 export class CountryRepositorySqlite implements CountryRepository {
+  /** Cached region/subregion lookups (static reference data). */
+  private lookupsCache: [Map<number, RegionEntity>, Map<number, SubregionEntity>] | null = null;
+
   constructor(@Inject(DATABASE_TOKEN) private readonly db: Kysely<Database>) {}
 
-  /** List — 1 query, no states/cities. */
-  async findAll(): Promise<CountryRecord[]> {
-    const rows = await this.db.selectFrom('countries').selectAll().execute();
-    return rows.map(r => this.toCountry(r, []));
-  }
-
-  /** Detail — 3 queries (country + states + cities). */
-  async findByName(name: string): Promise<CountryRecord | null> {
-    const row = await this.db.selectFrom('countries').selectAll().where('name', '=', name).executeTakeFirst();
-
-    if (!row) return null;
-
-    const states = await this.loadStates(row.id);
-    return this.toCountry(row, states);
-  }
-
-  /** State detail — 2 queries (state + cities). */
-  async findStateByName(name: string): Promise<StateRecord | null> {
-    const row = await this.db.selectFrom('states').selectAll().where('name', '=', name).executeTakeFirst();
-
-    if (!row) return null;
-
-    const cities = await this.loadCities([row.id]);
-    return this.toState(row, cities.get(row.id) ?? []);
-  }
-
-  // ── Loaders ─────────────────────────────────────────────────
-
-  private async loadStates(countryId: number): Promise<StateRecord[]> {
-    const rows = await this.db.selectFrom('states').selectAll().where('country_id', '=', countryId).execute();
+  /**
+   * List — all countries with states and cities.
+   * Round 1: lookups + countries + states in parallel.
+   * Round 2: cities for all states.
+   */
+  async findAll(): Promise<CountryEntity[]> {
+    const [[regionMap, subregionMap], rows, stateRows] = await Promise.all([
+      this.loadLookups(),
+      selectAllCountries(this.db),
+      selectAllStates(this.db),
+    ]);
 
     if (!rows.length) return [];
+    if (!stateRows.length) return rows.map(r => toCountryEntity(r, [], regionMap, subregionMap));
 
-    const cities = await this.loadCities(rows.map(s => s.id));
-    return rows.map(s => this.toState(s, cities.get(s.id) ?? []));
-  }
+    const cities = await selectCitiesByStateIds(
+      this.db,
+      stateRows.map(s => s.id),
+    );
 
-  private async loadCities(stateIds: number[]): Promise<Map<number, CityRecord[]>> {
-    const rows = await this.db
-      .selectFrom('cities')
-      .select(['name', 'state_code', 'country_code', 'latitude', 'longitude', 'state_id'])
-      .where('state_id', 'in', stateIds)
-      .execute();
-
-    const map = new Map<number, CityRecord[]>();
-    for (const r of rows) {
-      const list = map.get(r.state_id) ?? [];
-      list.push({
-        name: r.name,
-        state_code: r.state_code,
-        country_code: r.country_code,
-        latitude: r.latitude,
-        longitude: r.longitude,
-      });
-      map.set(r.state_id, list);
+    const statesByCountry = new Map<number, StateEntity[]>();
+    for (const s of stateRows) {
+      const list = statesByCountry.get(s.country_id) ?? [];
+      list.push(toStateEntity(s, cities.get(s.id) ?? []));
+      statesByCountry.set(s.country_id, list);
     }
-    return map;
+
+    return rows.map(r => toCountryEntity(r, statesByCountry.get(r.id) ?? [], regionMap, subregionMap));
   }
 
-  // ── Mappers (DB row → API record) ───────────────────────────
+  /**
+   * Detail — accent/case-insensitive best match by country name.
+   * Round 1: lean search (id + name only).
+   * Round 2: full country + lookups + states in parallel.
+   * Round 3: cities for matched states.
+   */
+  async findByName(name: string): Promise<CountryEntity | null> {
+    const searchRows = await selectCountryNamesForSearch(this.db);
+    const match = bestMatch(name, searchRows, r => r.name);
+    if (!match) return null;
 
-  private toCountry(r: CountryRow, states: StateRecord[]): CountryRecord {
-    return {
-      name: r.name,
-      iso2: s(r.iso2),
-      iso3: s(r.iso3),
-      numeric_code: s(r.numeric_code),
-      capital: s(r.capital),
-      phonecode: s(r.phonecode),
-      tld: s(r.tld),
-      nationality: s(r.nationality),
-      region: s(r.region),
-      subregion: s(r.subregion),
-      latitude: n(r.latitude),
-      longitude: n(r.longitude),
-      emoji: s(r.emoji),
-      emojiU: s(r.emojiU),
-      currency: { code: s(r.currency), name: s(r.currency_name), symbol: s(r.currency_symbol) },
-      states,
-    };
+    const [[regionMap, subregionMap], countryRow, stateRows] = await Promise.all([
+      this.loadLookups(),
+      selectCountryById(this.db, match.id),
+      selectStatesByCountryId(this.db, match.id),
+    ]);
+    if (!countryRow) return null;
+
+    if (!stateRows.length) return toCountryEntity(countryRow, [], regionMap, subregionMap);
+
+    const cities = await selectCitiesByStateIds(
+      this.db,
+      stateRows.map(s => s.id),
+    );
+    const states = stateRows.map(s => toStateEntity(s, cities.get(s.id) ?? []));
+    return toCountryEntity(countryRow, states, regionMap, subregionMap);
   }
 
-  private toState(r: StateRow, cities: CityRecord[]): StateRecord {
-    return {
-      name: r.name,
-      iso2: s(r.iso2),
-      type: s(r.type),
-      country_code: r.country_code,
-      latitude: n(r.latitude),
-      longitude: n(r.longitude),
-      cities,
-    };
+  /**
+   * Find country by state name — accent/case-insensitive best match.
+   * Round 1: lean state search (id + name + country_id).
+   * Round 2: full country + lookups + states in parallel.
+   * Round 3: cities for matched states.
+   */
+  async findCountryByStateName(name: string): Promise<CountryEntity | null> {
+    const searchRows = await selectStateNamesForSearch(this.db);
+    const match = bestMatch(name, searchRows, r => r.name);
+    if (!match) return null;
+
+    const [[regionMap, subregionMap], countryRow, stateRows] = await Promise.all([
+      this.loadLookups(),
+      selectCountryById(this.db, match.country_id),
+      selectStatesByCountryId(this.db, match.country_id),
+    ]);
+    if (!countryRow) return null;
+
+    if (!stateRows.length) return toCountryEntity(countryRow, [], regionMap, subregionMap);
+
+    const cities = await selectCitiesByStateIds(
+      this.db,
+      stateRows.map(s => s.id),
+    );
+    const states = stateRows.map(s => toStateEntity(s, cities.get(s.id) ?? []));
+    return toCountryEntity(countryRow, states, regionMap, subregionMap);
+  }
+
+  // ── Private ─────────────────────────────────────────────────
+
+  /** Load and cache region/subregion lookup maps (static data, loaded once). */
+  private async loadLookups(): Promise<[Map<number, RegionEntity>, Map<number, SubregionEntity>]> {
+    if (this.lookupsCache) return this.lookupsCache;
+
+    const [regionRows, subregionRows] = await Promise.all([selectAllRegions(this.db), selectAllSubregions(this.db)]);
+
+    const regionMap = new Map(regionRows.map(r => [r.id, toRegionEntity(r)]));
+    const subregionMap = new Map(subregionRows.map(r => [r.id, toSubregionEntity(r)]));
+
+    this.lookupsCache = [regionMap, subregionMap];
+    return this.lookupsCache;
   }
 }
-
-// ── Null coalescing helpers ─────────────────────────────────
-
-const s = (v: string | null): string => v ?? '';
-const n = (v: number | null): number => v ?? 0;

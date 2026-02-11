@@ -47,8 +47,10 @@ pids
 *.seed
 *.pid.lock
 
-# SQLite database files
-*.db
+# SQLite database files (temporary/runtime)
 *.db-journal
 *.db-wal
 *.db-shm
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
