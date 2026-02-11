@@ -1,64 +1,134 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Kysely } from 'kysely';
-import { ExcludeOptions } from '../../../common/interfaces/exclude-options.interface';
-import { Database, DATABASE_TOKEN } from '../../../database';
-import { CountryRepository, CountryRow, CountryWithRelations } from './country.repository.interface';
+import { CountryRow, Database, DATABASE_TOKEN } from '../../../database';
+import { CityResult, CountryRepository, CountryResult, StateResult } from './country.repository.interface';
 
 @Injectable()
 export class CountryRepositorySqlite implements CountryRepository {
   constructor(@Inject(DATABASE_TOKEN) private readonly db: Kysely<Database>) {}
 
-  async findAll(options: ExcludeOptions): Promise<CountryWithRelations[]> {
+  async findAll(): Promise<CountryResult[]> {
     const rows = await this.db.selectFrom('countries').selectAll().execute();
-
-    return this.hydrateMany(rows, options);
+    return this.hydrateMany(rows);
   }
 
-  async findOneBy(field: string, value: string, options: ExcludeOptions): Promise<CountryWithRelations | null> {
-    const row = await this.db
-      .selectFrom('countries')
-      .selectAll()
-      .where(field as keyof Database['countries'], '=', value)
-      .executeTakeFirst();
-
+  async findByName(name: string): Promise<CountryResult | null> {
+    const row = await this.db.selectFrom('countries').selectAll().where('name', '=', name).executeTakeFirst();
     if (!row) return null;
 
-    return this.hydrateOne(row, options);
+    const states = await this.loadRelationsForCountry(row.id);
+    return { country: row, states };
   }
 
-  async findAllBy(field: string, value: string, options: ExcludeOptions): Promise<CountryWithRelations[]> {
-    const rows = await this.db
-      .selectFrom('countries')
-      .selectAll()
-      .where(field as keyof Database['countries'], '=', value)
+  async findStateByName(name: string): Promise<StateResult | null> {
+    const state = await this.db.selectFrom('states').selectAll().where('name', '=', name).executeTakeFirst();
+    if (!state) return null;
+
+    // Direct query — state_code/country_code are on the cities table, no JOIN needed
+    const cities = await this.db
+      .selectFrom('cities')
+      .select(['name', 'state_code', 'country_code', 'latitude', 'longitude'])
+      .where('state_id', '=', state.id)
       .execute();
 
-    return this.hydrateMany(rows, options);
+    return {
+      name: state.name,
+      iso2: state.iso2,
+      type: state.type,
+      country_code: state.country_code,
+      latitude: state.latitude,
+      longitude: state.longitude,
+      cities,
+    };
   }
 
-  private async hydrateMany(rows: CountryRow[], options: ExcludeOptions): Promise<CountryWithRelations[]> {
-    return Promise.all(rows.map(row => this.hydrateOne(row, options)));
+  // ── Batch hydration (3 queries total, avoids N+1) ───────────
+
+  private async hydrateMany(rows: CountryRow[]): Promise<CountryResult[]> {
+    if (!rows.length) return [];
+
+    const countryIds = rows.map(r => r.id);
+
+    // 1 query → all states
+    const allStates = await this.db.selectFrom('states').selectAll().where('country_id', 'in', countryIds).execute();
+
+    // 1 query → all cities — NO JOIN needed, state_code is denormalized
+    const allCities = await this.db
+      .selectFrom('cities')
+      .select(['name', 'state_code', 'country_code', 'latitude', 'longitude', 'state_id'])
+      .where('country_id', 'in', countryIds)
+      .execute();
+
+    // Group cities by state_id
+    const citiesByState = new Map<number, CityResult[]>();
+    for (const c of allCities) {
+      const list = citiesByState.get(c.state_id) ?? [];
+      list.push({
+        name: c.name,
+        state_code: c.state_code,
+        country_code: c.country_code,
+        latitude: c.latitude,
+        longitude: c.longitude,
+      });
+      citiesByState.set(c.state_id, list);
+    }
+
+    // Group states by country_id, attach their cities
+    const statesByCountry = new Map<number, StateResult[]>();
+    for (const s of allStates) {
+      const list = statesByCountry.get(s.country_id) ?? [];
+      list.push({
+        name: s.name,
+        iso2: s.iso2,
+        type: s.type,
+        country_code: s.country_code,
+        latitude: s.latitude,
+        longitude: s.longitude,
+        cities: citiesByState.get(s.id) ?? [],
+      });
+      statesByCountry.set(s.country_id, list);
+    }
+
+    return rows.map(row => ({ country: row, states: statesByCountry.get(row.id) ?? [] }));
   }
 
-  private async hydrateOne(row: CountryRow, options: ExcludeOptions): Promise<CountryWithRelations> {
-    const result: CountryWithRelations = { ...row };
+  // ── Single-country batch loader (2 queries, no N+1) ─────────
 
-    if (!options.excludeStates) {
-      result.states = await this.db
-        .selectFrom('states')
-        .select(['name', 'code', 'country_code', 'latitude', 'longitude'])
-        .where('country_code', '=', row.code)
-        .execute();
+  private async loadRelationsForCountry(countryId: number): Promise<StateResult[]> {
+    const stateRows = await this.db.selectFrom('states').selectAll().where('country_id', '=', countryId).execute();
+
+    if (!stateRows.length) return [];
+
+    const stateIds = stateRows.map(s => s.id);
+
+    // 1 query for all cities of all states — no JOIN
+    const cityRows = await this.db
+      .selectFrom('cities')
+      .select(['name', 'state_code', 'country_code', 'latitude', 'longitude', 'state_id'])
+      .where('state_id', 'in', stateIds)
+      .execute();
+
+    const citiesByState = new Map<number, CityResult[]>();
+    for (const c of cityRows) {
+      const list = citiesByState.get(c.state_id) ?? [];
+      list.push({
+        name: c.name,
+        state_code: c.state_code,
+        country_code: c.country_code,
+        latitude: c.latitude,
+        longitude: c.longitude,
+      });
+      citiesByState.set(c.state_id, list);
     }
 
-    if (!options.excludeCities) {
-      result.cities = await this.db
-        .selectFrom('cities')
-        .select(['name', 'state_code', 'country_code', 'latitude', 'longitude'])
-        .where('country_code', '=', row.code)
-        .execute();
-    }
-
-    return result;
+    return stateRows.map(s => ({
+      name: s.name,
+      iso2: s.iso2,
+      type: s.type,
+      country_code: s.country_code,
+      latitude: s.latitude,
+      longitude: s.longitude,
+      cities: citiesByState.get(s.id) ?? [],
+    }));
   }
 }

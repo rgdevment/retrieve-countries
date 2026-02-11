@@ -4,70 +4,35 @@
 
 .DEFAULT_GOAL := help
 
-# ── Variables ────────────────────────────────
-APP_NAME     := retrieve-countries
-COMPOSE_PROD := docker compose -f docker-compose.yml
-COMPOSE_DEV  := docker compose -f docker-compose.dev.yml
+APP          := retrieve-countries
+DC_PROD      := docker compose -f docker-compose.yml
+DC_DEV       := docker compose -f docker-compose.dev.yml
 
-# ── Development (local) ─────────────────────
-.PHONY: install dev start build test test-cov lint lint-fix format
+.PHONY: dev prod down logs build test install clean help
 
+# ── Docker ───────────────────────────────────
+dev: ## Start dev containers (hot-reload)
+	$(DC_DEV) up --build
+
+prod: ## Start production containers
+	$(DC_PROD) up -d --build
+
+down: ## Stop all containers
+	@$(DC_DEV) down 2>/dev/null || true
+	@$(DC_PROD) down -v 2>/dev/null || true
+
+logs: ## Tail container logs
+	@docker compose logs -f
+
+# ── Local ────────────────────────────────────
 install: ## Install dependencies
 	npm ci
-
-dev: ## Start in watch mode (local)
-	npm run start:dev
-
-start: ## Start compiled app (local)
-	npm run start:prod
 
 build: ## Compile TypeScript
 	npm run build
 
 test: ## Run tests
 	npm test
-
-test-cov: ## Run tests with coverage
-	npm run test:cov
-
-lint: ## Lint source code
-	npm run lint
-
-lint-fix: ## Lint + auto-fix
-	npm run lint:fix
-
-format: ## Format source code with Prettier
-	npm run format
-
-# ── Docker Development ──────────────────────
-.PHONY: docker-dev docker-dev-down docker-dev-logs
-
-docker-dev: ## Start dev containers (hot-reload)
-	$(COMPOSE_DEV) up --build
-
-docker-dev-down: ## Stop dev containers
-	$(COMPOSE_DEV) down
-
-docker-dev-logs: ## Tail dev container logs
-	$(COMPOSE_DEV) logs -f
-
-# ── Docker Production ───────────────────────
-.PHONY: docker-prod docker-prod-down docker-prod-logs docker-build
-
-docker-build: ## Build production image
-	docker build --target production -t $(APP_NAME) .
-
-docker-prod: ## Start production containers
-	$(COMPOSE_PROD) up -d --build
-
-docker-prod-down: ## Stop production containers & remove volumes
-	$(COMPOSE_PROD) down -v
-
-docker-prod-logs: ## Tail production logs
-	$(COMPOSE_PROD) logs -f
-
-# ── Utilities ────────────────────────────────
-.PHONY: clean help
 
 clean: ## Remove build artifacts and caches
 	rm -rf dist coverage node_modules/.cache

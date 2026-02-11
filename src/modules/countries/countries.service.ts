@@ -1,90 +1,76 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { CountryDto } from '../../common/dto/country.dto';
-import { ExcludeOptions } from '../../common/interfaces/exclude-options.interface';
-import { CountryRepository, CountryWithRelations } from './repositories/country.repository.interface';
+import { CountryDto } from './dto/country.dto';
+import { StateDto } from './dto/state.dto';
+import { CountryRepository, CountryResult, StateResult } from './repositories/country.repository.interface';
 
 @Injectable()
 export class CountriesService {
   constructor(
     @Inject('CountryRepository')
-    private readonly countryRepository: CountryRepository,
+    private readonly repo: CountryRepository,
   ) {}
 
-  async getAllCountries(options: ExcludeOptions): Promise<CountryDto[]> {
-    const countries = await this.countryRepository.findAll(options);
-    return this.handleArrayResult(countries);
+  async getAllCountries(): Promise<CountryDto[]> {
+    const countries = await this.repo.findAll();
+    if (!countries.length) throw new HttpException('No content', HttpStatus.NO_CONTENT);
+    return countries.map(c => this.toCountryDto(c));
   }
 
-  async getCountryByName(name: string, options: ExcludeOptions): Promise<CountryDto> {
-    const country = await this.countryRepository.findOneBy('name', name, options);
-    return this.handleSingleResult(country);
+  async getCountryByName(name: string): Promise<CountryDto> {
+    const country = await this.repo.findByName(name);
+    if (!country) throw new HttpException('No content', HttpStatus.NO_CONTENT);
+    return this.toCountryDto(country);
   }
 
-  async getCountryByCapital(capital: string, options: ExcludeOptions): Promise<CountryDto> {
-    const country = await this.countryRepository.findOneBy('capital', capital, options);
-    return this.handleSingleResult(country);
+  async getStateByName(name: string): Promise<StateDto> {
+    const state = await this.repo.findStateByName(name);
+    if (!state) throw new HttpException('No content', HttpStatus.NO_CONTENT);
+    return this.toStateDto(state);
   }
 
-  async getCountryByRegion(region: string, options: ExcludeOptions): Promise<CountryDto[]> {
-    const countries = await this.countryRepository.findAllBy('region', region, options);
-    return this.handleArrayResult(countries);
-  }
+  // ── Mapping ──────────────────────────────────────────────────
 
-  async getCountryBySubregion(subregion: string, options: ExcludeOptions): Promise<CountryDto[]> {
-    const countries = await this.countryRepository.findAllBy('subregion', subregion, options);
-    return this.handleArrayResult(countries);
-  }
+  private toCountryDto(data: CountryResult): CountryDto {
+    const c = data.country;
 
-  private handleSingleResult(result: CountryWithRelations | null): CountryDto {
-    if (!result) {
-      throw new HttpException('No content', HttpStatus.NO_CONTENT);
-    }
-    return this.toDto(result);
-  }
-
-  private handleArrayResult(results: CountryWithRelations[]): CountryDto[] {
-    if (!results.length) {
-      throw new HttpException('No content', HttpStatus.NO_CONTENT);
-    }
-    return results.map(r => this.toDto(r));
-  }
-
-  private toDto(row: CountryWithRelations): CountryDto {
     return {
-      name: row.name,
-      capital: row.capital ?? '',
-      code: row.code,
-      iso3: row.iso3 ?? '',
-      phone_code: row.phone_code ?? '',
-      region: row.region ?? '',
-      subregion: row.subregion ?? '',
-      latitude: row.latitude ?? 0,
-      longitude: row.longitude ?? 0,
-      tld: row.tld ?? '',
+      name: c.name,
+      iso2: c.iso2 ?? '',
+      iso3: c.iso3 ?? '',
+      numeric_code: c.numeric_code ?? '',
+      capital: c.capital ?? '',
+      phonecode: c.phonecode ?? '',
+      tld: c.tld ?? '',
+      nationality: c.nationality ?? '',
+      region: c.region ?? '',
+      subregion: c.subregion ?? '',
+      latitude: c.latitude ?? 0,
+      longitude: c.longitude ?? 0,
+      emoji: c.emoji ?? '',
+      emojiU: c.emojiU ?? '',
       currency: {
-        code: row.currency_code ?? '',
-        symbol: row.currency_symbol ?? '',
-        name: row.currency_name ?? '',
+        code: c.currency ?? '',
+        name: c.currency_name ?? '',
+        symbol: c.currency_symbol ?? '',
       },
-      flags: {
-        ico: row.flag_ico ?? '',
-        alt: row.flag_alt ?? '',
-        png: row.flag_png ?? '',
-        svg: row.flag_svg ?? '',
-      },
-      states: row.states?.map(s => ({
-        name: s.name,
-        code: s.code ?? '',
-        country_code: s.country_code,
-        latitude: s.latitude ?? 0,
-        longitude: s.longitude ?? 0,
-      })),
-      cities: row.cities?.map(c => ({
-        name: c.name,
-        state_code: c.state_code ?? '',
-        country_code: c.country_code,
-        latitude: c.latitude ?? 0,
-        longitude: c.longitude ?? 0,
+      states: data.states.map(s => this.toStateDto(s)),
+    };
+  }
+
+  private toStateDto(s: StateResult): StateDto {
+    return {
+      name: s.name,
+      iso2: s.iso2 ?? '',
+      type: s.type ?? '',
+      country_code: s.country_code,
+      latitude: s.latitude ?? 0,
+      longitude: s.longitude ?? 0,
+      cities: s.cities.map(ci => ({
+        name: ci.name,
+        state_code: ci.state_code,
+        country_code: ci.country_code,
+        latitude: ci.latitude,
+        longitude: ci.longitude,
       })),
     };
   }

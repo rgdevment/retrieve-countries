@@ -1,48 +1,31 @@
-import { ExcludeOptions } from '../../../common/interfaces/exclude-options.interface';
+import { CountryRow, StateRow } from '../../../database';
 
-export interface CountryRow {
-  name: string;
-  capital: string | null;
-  code: string;
-  iso3: string | null;
-  phone_code: string | null;
-  region: string | null;
-  subregion: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  tld: string | null;
-  currency_code: string | null;
-  currency_symbol: string | null;
-  currency_name: string | null;
-  flag_ico: string | null;
-  flag_alt: string | null;
-  flag_png: string | null;
-  flag_svg: string | null;
-}
+// ─── Shapes returned by the repository ───────────────────────
 
-export interface StateRow {
+export interface CityResult {
   name: string;
-  code: string | null;
+  state_code: string;
   country_code: string;
-  latitude: number | null;
-  longitude: number | null;
+  latitude: number;
+  longitude: number;
 }
 
-export interface CityRow {
-  name: string;
-  state_code: string | null;
-  country_code: string;
-  latitude: number | null;
-  longitude: number | null;
+export interface StateResult extends Pick<
+  StateRow,
+  'name' | 'iso2' | 'type' | 'country_code' | 'latitude' | 'longitude'
+> {
+  cities: CityResult[];
 }
 
-export interface CountryWithRelations extends CountryRow {
-  states?: StateRow[];
-  cities?: CityRow[];
+export interface CountryResult {
+  country: CountryRow;
+  states: StateResult[];
 }
+
+// ─── Repository contract ─────────────────────────────────────
 
 export interface CountryRepository {
-  findAll(options: ExcludeOptions): Promise<CountryWithRelations[]>;
-  findOneBy(field: string, value: string, options: ExcludeOptions): Promise<CountryWithRelations | null>;
-  findAllBy(field: string, value: string, options: ExcludeOptions): Promise<CountryWithRelations[]>;
+  findAll(): Promise<CountryResult[]>;
+  findByName(name: string): Promise<CountryResult | null>;
+  findStateByName(name: string): Promise<StateResult | null>;
 }

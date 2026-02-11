@@ -9,7 +9,7 @@ services:
       - .env
     environment:
       - NODE_ENV=production
-      - DATABASE_PATH=/app/data/countries.db
+      - DATABASE_PATH=/app/data/world.sqlite3
     volumes:
       - sqlite-data:/app/data
     ports:
