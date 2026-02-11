@@ -7,9 +7,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      - NODE_ENV=development
-      - DATABASE_PATH=/app/data/world.sqlite3
     volumes:
       - ./src:/app/src # hot-reload source
       - ./test:/app/test

@@ -1,4 +1,4 @@
-import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import { Controller, Get, HttpCode, HttpStatus, Param, UseInterceptors } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CountriesService } from './countries.service';
@@ -8,7 +8,6 @@ import { StateDto } from './dto/state.dto';
 @ApiTags('countries')
 @Controller()
 @UseInterceptors(CacheInterceptor)
-@CacheTTL(120_000)
 export class CountriesController {
   constructor(private readonly service: CountriesService) {}
 

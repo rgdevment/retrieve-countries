@@ -1,6 +1,6 @@
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database';
 import { CountriesModule } from './modules/countries/countries.module';
@@ -11,10 +11,13 @@ import { CountriesModule } from './modules/countries/countries.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    CacheModule.register({
+    CacheModule.registerAsync({
       isGlobal: true,
-      ttl: 60_000, // 60 seconds default TTL (in ms)
-      max: 200, // max items in cache
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        ttl: config.getOrThrow<number>('CACHE_TTL'),
+        max: config.getOrThrow<number>('CACHE_MAX'),
+      }),
     }),
     DatabaseModule,
     CommonModule,
