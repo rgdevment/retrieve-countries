@@ -26,7 +26,10 @@ function parseJson<T>(raw: string | null): T | null {
 
 // ── DB Row → Entity mappers ─────────────────────────────────
 
-export function toRegionEntity(row: RegionRow): RegionEntity {
+/** Generic helper for region and subregion entities */
+function toRegionOrSubregionEntity<T extends { name: string; translations: string | null; wikiDataId: string | null }>(
+  row: T,
+) {
   return {
     name: row.name,
     translations: parseJson<Record<string, string>>(row.translations),
@@ -34,12 +37,12 @@ export function toRegionEntity(row: RegionRow): RegionEntity {
   };
 }
 
+export function toRegionEntity(row: RegionRow): RegionEntity {
+  return toRegionOrSubregionEntity(row) as RegionEntity;
+}
+
 export function toSubregionEntity(row: SubregionRow): SubregionEntity {
-  return {
-    name: row.name,
-    translations: parseJson<Record<string, string>>(row.translations),
-    wikiDataId: s(row.wikiDataId),
-  };
+  return toRegionOrSubregionEntity(row) as SubregionEntity;
 }
 
 const EMPTY_REGION: RegionEntity = { name: '', translations: null, wikiDataId: '' };
