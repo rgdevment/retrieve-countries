@@ -8,7 +8,7 @@ import { CountryDto } from './dto/country.dto';
 import { CountryEntity, CountrySimpleEntity } from './entities';
 
 @ApiTags('Countries')
-@Controller('countries')
+@Controller()
 @UseInterceptors(CacheInterceptor)
 @ApiExtraModels(CountryDto, CountrySimpleDto)
 export class CountriesController {

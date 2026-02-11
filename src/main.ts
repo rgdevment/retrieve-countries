@@ -11,7 +11,7 @@ async function bootstrap() {
 
   app.use(compression({ level: 6, threshold: 2048 }));
 
-  app.setGlobalPrefix('v1', {
+  app.setGlobalPrefix('api/v1', {
     exclude: [{ path: 'health', method: RequestMethod.GET }],
   });
 
@@ -26,7 +26,7 @@ async function bootstrap() {
         'Data includes currency, timezone, coordinates, and more.',
     )
     .setVersion('1.0')
-    .setLicense('MIT', 'https://opensource.org/licenses/MIT')
+    .setLicense('GPL-3.0-only', 'https://www.gnu.org/licenses/gpl-3.0.en.html')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

@@ -8,6 +8,6 @@ import { StatesController } from './states.controller';
 
 @Module({
   providers: [CountriesService, { provide: 'CountryRepository', useClass: CountryRepositorySqlite }],
-  controllers: [CountriesController, StatesController, CitiesController, SearchController],
+  controllers: [StatesController, CitiesController, SearchController, CountriesController],
 })
 export class CountriesModule {}
