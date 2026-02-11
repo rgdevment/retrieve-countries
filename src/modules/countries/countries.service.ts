@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { CountryEntity } from './entities';
-import { CountryRepository } from './repositories/country.repository.interface';
+import { ExcludeOption, ResponseType } from './dto/country-query.dto';
+import { CityEntity, CountryEntity, CountrySimpleEntity, StateEntity } from './entities';
+import { CountryRepository, HierarchyOptions, SearchResult } from './repositories/country.repository.interface';
 
 @Injectable()
 export class CountriesService {
@@ -9,21 +10,114 @@ export class CountriesService {
     private readonly repo: CountryRepository,
   ) {}
 
-  async getAllCountries(): Promise<CountryEntity[]> {
-    const countries = await this.repo.findAll();
+  // ── Countries ───────────────────────────────────────────────
+
+  /** List all countries. Supports hierarchy exclusion and simple mode. */
+  async findAllCountries(
+    exclude?: ExcludeOption,
+    type?: ResponseType,
+  ): Promise<CountryEntity[] | CountrySimpleEntity[]> {
+    const isSimple = type === ResponseType.SIMPLE;
+    const options = isSimple ? { includeStates: false, includeCities: false } : this.parseExclude(exclude);
+
+    const countries = await this.repo.findAll(options);
     if (!countries.length) throw new HttpException('No content', HttpStatus.NO_CONTENT);
-    return countries;
+
+    return isSimple ? countries.map(this.toSimple) : countries;
   }
 
-  async getCountryByName(name: string): Promise<CountryEntity> {
-    const country = await this.repo.findByName(name);
+  /** Smart Resolve — find a country by ID, ISO2, ISO3, or name. */
+  async findCountryByTerm(
+    term: string,
+    exclude?: ExcludeOption,
+    type?: ResponseType,
+  ): Promise<CountryEntity | CountrySimpleEntity> {
+    const isSimple = type === ResponseType.SIMPLE;
+    const options = isSimple ? { includeStates: false, includeCities: false } : this.parseExclude(exclude);
+
+    const country = await this.repo.findByTerm(term, options);
     if (!country) throw new HttpException('No content', HttpStatus.NO_CONTENT);
-    return country;
+
+    return isSimple ? this.toSimple(country) : country;
   }
 
-  async getCountryByStateName(name: string): Promise<CountryEntity> {
-    const country = await this.repo.findCountryByStateName(name);
-    if (!country) throw new HttpException('No content', HttpStatus.NO_CONTENT);
-    return country;
+  /** Filter countries by region/continent name. */
+  async findCountriesByRegion(
+    name: string,
+    exclude?: ExcludeOption,
+    type?: ResponseType,
+  ): Promise<CountryEntity[] | CountrySimpleEntity[]> {
+    const isSimple = type === ResponseType.SIMPLE;
+    const options = isSimple ? { includeStates: false, includeCities: false } : this.parseExclude(exclude);
+
+    const countries = await this.repo.findByRegion(name, options);
+    if (!countries.length) throw new HttpException('No content', HttpStatus.NO_CONTENT);
+
+    return isSimple ? countries.map(this.toSimple) : countries;
+  }
+
+  /** Filter countries by subregion name. */
+  async findCountriesBySubregion(
+    name: string,
+    exclude?: ExcludeOption,
+    type?: ResponseType,
+  ): Promise<CountryEntity[] | CountrySimpleEntity[]> {
+    const isSimple = type === ResponseType.SIMPLE;
+    const options = isSimple ? { includeStates: false, includeCities: false } : this.parseExclude(exclude);
+
+    const countries = await this.repo.findBySubregion(name, options);
+    if (!countries.length) throw new HttpException('No content', HttpStatus.NO_CONTENT);
+
+    return isSimple ? countries.map(this.toSimple) : countries;
+  }
+
+  // ── States ──────────────────────────────────────────────────
+
+  /** Get a specific state by ID, optionally excluding its cities. */
+  async findStateById(id: number, excludeCities: boolean): Promise<StateEntity> {
+    const state = await this.repo.findStateById(id, !excludeCities);
+    if (!state) throw new HttpException('No content', HttpStatus.NO_CONTENT);
+    return state;
+  }
+
+  // ── Cities ──────────────────────────────────────────────────
+
+  /** Get a specific city by ID. */
+  async findCityById(id: number): Promise<CityEntity> {
+    const city = await this.repo.findCityById(id);
+    if (!city) throw new HttpException('No content', HttpStatus.NO_CONTENT);
+    return city;
+  }
+
+  // ── Search ──────────────────────────────────────────────────
+
+  /** Global search across countries, states, and cities. */
+  async search(query: string): Promise<SearchResult> {
+    if (!query || query.trim().length < 2) {
+      throw new HttpException('Search term is required and must be at least 2 characters', HttpStatus.BAD_REQUEST);
+    }
+    return this.repo.search(query.trim(), 20);
+  }
+
+  // ── Private helpers ─────────────────────────────────────────
+
+  private parseExclude(exclude?: ExcludeOption): HierarchyOptions {
+    switch (exclude) {
+      case ExcludeOption.STATES:
+        return { includeStates: false, includeCities: false };
+      case ExcludeOption.CITIES:
+        return { includeStates: true, includeCities: false };
+      default:
+        return { includeStates: true, includeCities: true };
+    }
+  }
+
+  private toSimple(country: CountryEntity): CountrySimpleEntity {
+    return {
+      id: country.id,
+      name: country.name,
+      iso2: country.iso2,
+      emoji: country.emoji,
+    };
   }
 }

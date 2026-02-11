@@ -9,6 +9,7 @@ describe('CountriesService', () => {
   let repository: CountryRepository;
 
   const mockCountry: CountryEntity = {
+    id: 44,
     name: 'Chile',
     iso2: 'CL',
     iso3: 'CHL',
@@ -30,6 +31,7 @@ describe('CountriesService', () => {
     currency: { code: 'CLP', name: 'Chilean Peso', symbol: '$' },
     states: [
       {
+        id: 2113,
         name: 'Antofagasta',
         iso2: 'AN',
         type: 'region',
@@ -54,8 +56,12 @@ describe('CountriesService', () => {
           provide: 'CountryRepository',
           useValue: {
             findAll: jest.fn(),
-            findByName: jest.fn(),
-            findCountryByStateName: jest.fn(),
+            findByTerm: jest.fn(),
+            findByRegion: jest.fn(),
+            findBySubregion: jest.fn(),
+            findStateById: jest.fn(),
+            findCityById: jest.fn(),
+            search: jest.fn(),
           },
         },
       ],
@@ -70,59 +76,87 @@ describe('CountriesService', () => {
     await expect(fn()).rejects.toMatchObject({ status: HttpStatus.NO_CONTENT });
   };
 
-  describe('getAllCountries', () => {
+  describe('findAllCountries', () => {
     it('should return mapped country DTOs with states', async () => {
       jest.spyOn(repository, 'findAll').mockResolvedValue([mockCountry]);
 
-      const result = await service.getAllCountries();
+      const result = await service.findAllCountries();
 
       expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Chile');
-      expect(result[0].iso2).toBe('CL');
-      expect(result[0].currency.code).toBe('CLP');
-      expect(result[0].emoji).toBe('🇨🇱');
-      expect(result[0].states).toHaveLength(1);
-      expect(result[0].states[0].name).toBe('Antofagasta');
+      const country = (result as CountryEntity[])[0];
+      expect(country.name).toBe('Chile');
+      expect(country.iso2).toBe('CL');
+      expect(country.currency.code).toBe('CLP');
+      expect(country.emoji).toBe('🇨🇱');
+      expect(country.states).toHaveLength(1);
+      expect(country.states[0].name).toBe('Antofagasta');
     });
 
     it('should throw NO_CONTENT when empty', async () => {
       jest.spyOn(repository, 'findAll').mockResolvedValue([]);
-      await expectNoContent(() => service.getAllCountries());
+      await expectNoContent(() => service.findAllCountries());
     });
   });
 
-  describe('getCountryByName', () => {
+  describe('findCountryByTerm', () => {
     it('should return a country DTO when found', async () => {
-      jest.spyOn(repository, 'findByName').mockResolvedValue(mockCountry);
+      jest.spyOn(repository, 'findByTerm').mockResolvedValue(mockCountry);
 
-      const result = await service.getCountryByName('Chile');
+      const result = await service.findCountryByTerm('Chile');
 
-      expect(result.name).toBe('Chile');
-      expect(result.iso2).toBe('CL');
-      expect(result.nationality).toBe('Chilean');
+      expect((result as CountryEntity).name).toBe('Chile');
+      expect((result as CountryEntity).iso2).toBe('CL');
+      expect((result as CountryEntity).nationality).toBe('Chilean');
     });
 
     it('should throw NO_CONTENT when not found', async () => {
-      jest.spyOn(repository, 'findByName').mockResolvedValue(null);
-      await expectNoContent(() => service.getCountryByName('Unknown'));
+      jest.spyOn(repository, 'findByTerm').mockResolvedValue(null);
+      await expectNoContent(() => service.findCountryByTerm('Unknown'));
     });
   });
 
-  describe('getCountryByStateName', () => {
-    it('should return the country containing the state', async () => {
-      jest.spyOn(repository, 'findCountryByStateName').mockResolvedValue(mockCountry);
+  describe('findCountriesByRegion', () => {
+    it('should return countries in the specified region', async () => {
+      jest.spyOn(repository, 'findByRegion').mockResolvedValue([mockCountry]);
 
-      const result = await service.getCountryByStateName('Antofagasta');
+      const result = await service.findCountriesByRegion('Americas');
 
-      expect(result.name).toBe('Chile');
-      expect(result.iso2).toBe('CL');
-      expect(result.states).toHaveLength(1);
-      expect(result.states[0].name).toBe('Antofagasta');
+      expect(result).toHaveLength(1);
+      expect((result as CountryEntity[])[0].name).toBe('Chile');
     });
 
     it('should throw NO_CONTENT when not found', async () => {
-      jest.spyOn(repository, 'findCountryByStateName').mockResolvedValue(null);
-      await expectNoContent(() => service.getCountryByStateName('Unknown'));
+      jest.spyOn(repository, 'findByRegion').mockResolvedValue([]);
+      await expectNoContent(() => service.findCountriesByRegion('Unknown'));
+    });
+  });
+
+  describe('findStateById', () => {
+    it('should return a state when found', async () => {
+      const mockState = mockCountry.states[0];
+      jest.spyOn(repository, 'findStateById').mockResolvedValue(mockState);
+
+      const result = await service.findStateById(2113, false);
+      expect(result.name).toBe('Antofagasta');
+    });
+
+    it('should throw NO_CONTENT when not found', async () => {
+      jest.spyOn(repository, 'findStateById').mockResolvedValue(null);
+      await expectNoContent(() => service.findStateById(9999, false));
+    });
+  });
+
+  describe('search', () => {
+    it('should throw BAD_REQUEST for short query', async () => {
+      await expect(service.search('A')).rejects.toThrow(HttpException);
+    });
+
+    it('should delegate to repository', async () => {
+      const mockResult = { countries: [], states: [], cities: [] };
+      jest.spyOn(repository, 'search').mockResolvedValue(mockResult);
+
+      const result = await service.search('Santiago');
+      expect(result).toEqual(mockResult);
     });
   });
 });

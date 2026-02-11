@@ -2,6 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { CityDto } from './city.dto';
 
 export class StateDto {
+  @ApiProperty({ example: 2113, description: 'Unique identifier' })
+  readonly id!: number;
+
   @ApiProperty({ example: 'Antofagasta' })
   readonly name!: string;
 

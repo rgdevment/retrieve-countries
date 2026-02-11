@@ -1,5 +1,13 @@
-import { CountryRow, RegionRow, StateRow, SubregionRow } from '../../../database';
-import { CityEntity, CountryEntity, RegionEntity, StateEntity, SubregionEntity, TimezoneEntry } from '../entities';
+import { CityRow, CountryRow, RegionRow, StateRow, SubregionRow } from '../../../database';
+import {
+  CityEntity,
+  CountryEntity,
+  CountrySimpleEntity,
+  RegionEntity,
+  StateEntity,
+  SubregionEntity,
+  TimezoneEntry,
+} from '../entities';
 
 // ── Null coalescing helpers ─────────────────────────────────
 
@@ -44,6 +52,7 @@ export function toCountryEntity(
   subregionMap: Map<number, SubregionEntity>,
 ): CountryEntity {
   return {
+    id: row.id,
     name: row.name,
     iso2: s(row.iso2),
     iso3: s(row.iso3),
@@ -67,8 +76,18 @@ export function toCountryEntity(
   };
 }
 
+export function toCountrySimple(row: CountryRow): CountrySimpleEntity {
+  return {
+    id: row.id,
+    name: row.name,
+    iso2: s(row.iso2),
+    emoji: s(row.emoji),
+  };
+}
+
 export function toStateEntity(row: StateRow, cities: CityEntity[]): StateEntity {
   return {
+    id: row.id,
     name: row.name,
     iso2: s(row.iso2),
     type: s(row.type),
@@ -81,5 +100,17 @@ export function toStateEntity(row: StateRow, cities: CityEntity[]): StateEntity 
     longitude: n(row.longitude),
     wikiDataId: s(row.wikiDataId),
     cities,
+  };
+}
+
+export function toCityEntity(row: CityRow): CityEntity {
+  return {
+    id: row.id,
+    name: row.name,
+    state_code: row.state_code,
+    country_code: row.country_code,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    wikiDataId: s(row.wikiDataId),
   };
 }

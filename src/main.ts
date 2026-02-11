@@ -18,9 +18,12 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Retrieve Countries API')
     .setDescription(
-      'API REST para consultar información de países, estados/regiones y ciudades del mundo. ' +
-        'Soporta búsqueda insensible a mayúsculas y acentos (e.g., "mexico" encuentra "México"). ' +
-        'Los datos incluyen moneda, zona horaria, coordenadas y más.',
+      'Hierarchical REST API for querying countries, states/regions, and cities worldwide. ' +
+        'Features Smart Resolve (auto-detects ID, ISO code, or name), ' +
+        'accent/case-insensitive search (e.g., "mexico" finds "México"), ' +
+        'hierarchy control (?exclude=cities|states), ' +
+        'and a lightweight dropdown mode (?type=simple). ' +
+        'Data includes currency, timezone, coordinates, and more.',
     )
     .setVersion('1.0')
     .setLicense('MIT', 'https://opensource.org/licenses/MIT')

@@ -1,18 +1,29 @@
 import { Kysely } from 'kysely';
 import { Database } from '../../../database';
-import { CountryRow, RegionRow, StateRow, SubregionRow } from '../../../database/database.types';
+import { CityRow, CountryRow, RegionRow, StateRow, SubregionRow } from '../../../database/database.types';
 import { CityEntity } from '../entities';
 
-// ── Lean search types (used for bestMatch phase) ─────────────
+// ── Lean search types (used for bestMatch / search phase) ────
 
 export interface CountrySearchRow {
   readonly id: number;
   readonly name: string;
+  readonly iso2: string | null;
+  readonly iso3: string | null;
+  readonly emoji: string | null;
 }
 
 export interface StateSearchRow {
   readonly id: number;
   readonly name: string;
+  readonly iso2: string | null;
+  readonly country_id: number;
+}
+
+export interface CitySearchRow {
+  readonly id: number;
+  readonly name: string;
+  readonly state_id: number;
   readonly country_id: number;
 }
 
@@ -35,14 +46,34 @@ export function selectAllCountries(db: Kysely<Database>): Promise<CountryRow[]> 
   return db.selectFrom('countries').selectAll().execute();
 }
 
-/** Fetch only id + name for accent/case-insensitive search. */
+/** Fetch id + name + iso2 + iso3 + emoji for accent/case-insensitive search. */
 export function selectCountryNamesForSearch(db: Kysely<Database>): Promise<CountrySearchRow[]> {
-  return db.selectFrom('countries').select(['id', 'name']).execute();
+  return db.selectFrom('countries').select(['id', 'name', 'iso2', 'iso3', 'emoji']).execute();
 }
 
 /** Fetch a single country row by id. */
 export function selectCountryById(db: Kysely<Database>, id: number): Promise<CountryRow | undefined> {
   return db.selectFrom('countries').selectAll().where('id', '=', id).executeTakeFirst();
+}
+
+/** Fetch a single country row by ISO 3166-1 alpha-2 code. */
+export function selectCountryByIso2(db: Kysely<Database>, iso2: string): Promise<CountryRow | undefined> {
+  return db.selectFrom('countries').selectAll().where('iso2', '=', iso2).executeTakeFirst();
+}
+
+/** Fetch a single country row by ISO 3166-1 alpha-3 code. */
+export function selectCountryByIso3(db: Kysely<Database>, iso3: string): Promise<CountryRow | undefined> {
+  return db.selectFrom('countries').selectAll().where('iso3', '=', iso3).executeTakeFirst();
+}
+
+/** Fetch country rows by region FK. */
+export function selectCountriesByRegionId(db: Kysely<Database>, regionId: number): Promise<CountryRow[]> {
+  return db.selectFrom('countries').selectAll().where('region_id', '=', regionId).execute();
+}
+
+/** Fetch country rows by subregion FK. */
+export function selectCountriesBySubregionId(db: Kysely<Database>, subregionId: number): Promise<CountryRow[]> {
+  return db.selectFrom('countries').selectAll().where('subregion_id', '=', subregionId).execute();
 }
 
 // ── State ─────────────────────────────────────────────────────
@@ -52,9 +83,9 @@ export function selectAllStates(db: Kysely<Database>): Promise<StateRow[]> {
   return db.selectFrom('states').selectAll().execute();
 }
 
-/** Fetch only id + name + country_id for accent/case-insensitive search. */
+/** Fetch id + name + iso2 + country_id for accent/case-insensitive search. */
 export function selectStateNamesForSearch(db: Kysely<Database>): Promise<StateSearchRow[]> {
-  return db.selectFrom('states').select(['id', 'name', 'country_id']).execute();
+  return db.selectFrom('states').select(['id', 'name', 'iso2', 'country_id']).execute();
 }
 
 /** Fetch state rows for a single country. */
@@ -62,7 +93,47 @@ export function selectStatesByCountryId(db: Kysely<Database>, countryId: number)
   return db.selectFrom('states').selectAll().where('country_id', '=', countryId).execute();
 }
 
+/** Fetch state rows for multiple countries. */
+export function selectStatesByCountryIds(db: Kysely<Database>, countryIds: number[]): Promise<StateRow[]> {
+  if (!countryIds.length) return Promise.resolve([]);
+  return db.selectFrom('states').selectAll().where('country_id', 'in', countryIds).execute();
+}
+
+/** Fetch a single state row by id. */
+export function selectStateById(db: Kysely<Database>, id: number): Promise<StateRow | undefined> {
+  return db.selectFrom('states').selectAll().where('id', '=', id).executeTakeFirst();
+}
+
 // ── City ──────────────────────────────────────────────────────
+
+/** Fetch a single city row by id. */
+export function selectCityById(db: Kysely<Database>, id: number): Promise<CityRow | undefined> {
+  return db.selectFrom('cities').selectAll().where('id', '=', id).executeTakeFirst();
+}
+
+/** Fetch id + name + state_id + country_id for search. */
+export function selectCityNamesForSearch(db: Kysely<Database>): Promise<CitySearchRow[]> {
+  return db.selectFrom('cities').select(['id', 'name', 'state_id', 'country_id']).execute();
+}
+
+/** Fetch cities for a single state. */
+export async function selectCitiesByStateId(db: Kysely<Database>, stateId: number): Promise<CityEntity[]> {
+  const rows = await db
+    .selectFrom('cities')
+    .select(['id', 'name', 'state_code', 'country_code', 'latitude', 'longitude', 'wikiDataId'])
+    .where('state_id', '=', stateId)
+    .execute();
+
+  return rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    state_code: r.state_code,
+    country_code: r.country_code,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    wikiDataId: r.wikiDataId ?? '',
+  }));
+}
 
 /** Fetch cities grouped by state id. */
 export async function selectCitiesByStateIds(
@@ -73,7 +144,7 @@ export async function selectCitiesByStateIds(
 
   const rows = await db
     .selectFrom('cities')
-    .select(['name', 'state_code', 'country_code', 'latitude', 'longitude', 'wikiDataId', 'state_id'])
+    .select(['id', 'name', 'state_code', 'country_code', 'latitude', 'longitude', 'wikiDataId', 'state_id'])
     .where('state_id', 'in', stateIds)
     .execute();
 
@@ -81,6 +152,7 @@ export async function selectCitiesByStateIds(
   for (const r of rows) {
     const list = map.get(r.state_id) ?? [];
     list.push({
+      id: r.id,
       name: r.name,
       state_code: r.state_code,
       country_code: r.country_code,

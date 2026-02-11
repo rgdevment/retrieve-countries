@@ -11,7 +11,15 @@ export interface TimezoneEntry {
   readonly tzName: string;
 }
 
+export interface CountrySimpleEntity {
+  readonly id: number;
+  readonly name: string;
+  readonly iso2: string;
+  readonly emoji: string;
+}
+
 export interface CountryEntity {
+  readonly id: number;
   readonly name: string;
   readonly iso2: string;
   readonly iso3: string;

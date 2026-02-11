@@ -6,6 +6,9 @@ import { SubregionDto } from './subregion.dto';
 import { TimezoneDto } from './timezone.dto';
 
 export class CountryDto {
+  @ApiProperty({ example: 44, description: 'Unique identifier' })
+  readonly id!: number;
+
   @ApiProperty({ example: 'Chile' })
   readonly name!: string;
 

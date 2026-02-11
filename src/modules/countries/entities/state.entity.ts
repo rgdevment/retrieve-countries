@@ -1,6 +1,7 @@
 import { CityEntity } from './city.entity';
 
 export interface StateEntity {
+  readonly id: number;
   readonly name: string;
   readonly iso2: string;
   readonly type: string;
