@@ -1,43 +1,64 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Country } from '../../../common/schemas/country.schema';
-import { CountryRepository } from './country.repository.interface';
+import { Inject, Injectable } from '@nestjs/common';
+import { Kysely } from 'kysely';
 import { ExcludeOptions } from '../../../common/interfaces/exclude-options.interface';
-import { CountriesQueryDto } from '../../../common/dto/countries-query.dto';
+import { Database, DATABASE_TOKEN } from '../../../database';
+import { CountryRepository, CountryRow, CountryWithRelations } from './country.repository.interface';
 
 @Injectable()
-export class CountryRepositoryMongo implements CountryRepository {
-  constructor(@InjectModel(Country.name) private readonly countryModel: Model<Country>) {}
+export class CountryRepositorySqlite implements CountryRepository {
+  constructor(@Inject(DATABASE_TOKEN) private readonly db: Kysely<Database>) {}
 
-  async findAll(options: ExcludeOptions): Promise<Country[]> {
-    const projection = this.resolveProjection(options);
-    return this.countryModel.find({}, projection).exec();
+  async findAll(options: ExcludeOptions): Promise<CountryWithRelations[]> {
+    const rows = await this.db.selectFrom('countries').selectAll().execute();
+
+    return this.hydrateMany(rows, options);
   }
 
-  async findOneBy(field: string, value: string, options: ExcludeOptions): Promise<Country | null> {
-    const projection = this.resolveProjection(options);
-    const query = { [field]: value };
-    return this.countryModel.findOne(query, projection).collation({ locale: 'en', strength: 1 }).exec();
+  async findOneBy(field: string, value: string, options: ExcludeOptions): Promise<CountryWithRelations | null> {
+    const row = await this.db
+      .selectFrom('countries')
+      .selectAll()
+      .where(field as keyof Database['countries'], '=', value)
+      .executeTakeFirst();
+
+    if (!row) return null;
+
+    return this.hydrateOne(row, options);
   }
 
-  async findAllBy(field: string, value: string, options: ExcludeOptions): Promise<Country[]> {
-    const projection = this.resolveProjection(options);
-    const query = { [field]: value };
-    return this.countryModel.find(query, projection).collation({ locale: 'en', strength: 1 }).exec();
+  async findAllBy(field: string, value: string, options: ExcludeOptions): Promise<CountryWithRelations[]> {
+    const rows = await this.db
+      .selectFrom('countries')
+      .selectAll()
+      .where(field as keyof Database['countries'], '=', value)
+      .execute();
+
+    return this.hydrateMany(rows, options);
   }
 
-  private resolveProjection(options: ExcludeOptions) {
-    const projection: any = {};
+  private async hydrateMany(rows: CountryRow[], options: ExcludeOptions): Promise<CountryWithRelations[]> {
+    return Promise.all(rows.map(row => this.hydrateOne(row, options)));
+  }
 
-    if (options.excludeStates) {
-      projection.states = 0;
+  private async hydrateOne(row: CountryRow, options: ExcludeOptions): Promise<CountryWithRelations> {
+    const result: CountryWithRelations = { ...row };
+
+    if (!options.excludeStates) {
+      result.states = await this.db
+        .selectFrom('states')
+        .select(['name', 'code', 'country_code', 'latitude', 'longitude'])
+        .where('country_code', '=', row.code)
+        .execute();
     }
 
-    if (options.excludeCities || options instanceof CountriesQueryDto) {
-      projection.cities = 0;
+    if (!options.excludeCities) {
+      result.cities = await this.db
+        .selectFrom('cities')
+        .select(['name', 'state_code', 'country_code', 'latitude', 'longitude'])
+        .where('country_code', '=', row.code)
+        .execute();
     }
 
-    return projection;
+    return result;
   }
 }

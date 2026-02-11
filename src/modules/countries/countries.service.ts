@@ -1,12 +1,14 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { CountryRepository } from './repositories/country.repository.interface';
 import { CountryDto } from '../../common/dto/country.dto';
-import { plainToInstance } from 'class-transformer';
 import { ExcludeOptions } from '../../common/interfaces/exclude-options.interface';
+import { CountryRepository, CountryWithRelations } from './repositories/country.repository.interface';
 
 @Injectable()
 export class CountriesService {
-  constructor(@Inject('CountryRepository') private readonly countryRepository: CountryRepository) {}
+  constructor(
+    @Inject('CountryRepository')
+    private readonly countryRepository: CountryRepository,
+  ) {}
 
   async getAllCountries(options: ExcludeOptions): Promise<CountryDto[]> {
     const countries = await this.countryRepository.findAll(options);
@@ -33,17 +35,57 @@ export class CountriesService {
     return this.handleArrayResult(countries);
   }
 
-  private handleSingleResult<T>(result: T): CountryDto {
+  private handleSingleResult(result: CountryWithRelations | null): CountryDto {
     if (!result) {
       throw new HttpException('No content', HttpStatus.NO_CONTENT);
     }
-    return plainToInstance(CountryDto, result, { excludeExtraneousValues: true });
+    return this.toDto(result);
   }
 
-  private handleArrayResult<T>(results: T[]): CountryDto[] {
+  private handleArrayResult(results: CountryWithRelations[]): CountryDto[] {
     if (!results.length) {
       throw new HttpException('No content', HttpStatus.NO_CONTENT);
     }
-    return plainToInstance(CountryDto, results, { excludeExtraneousValues: true });
+    return results.map(r => this.toDto(r));
+  }
+
+  private toDto(row: CountryWithRelations): CountryDto {
+    return {
+      name: row.name,
+      capital: row.capital ?? '',
+      code: row.code,
+      iso3: row.iso3 ?? '',
+      phone_code: row.phone_code ?? '',
+      region: row.region ?? '',
+      subregion: row.subregion ?? '',
+      latitude: row.latitude ?? 0,
+      longitude: row.longitude ?? 0,
+      tld: row.tld ?? '',
+      currency: {
+        code: row.currency_code ?? '',
+        symbol: row.currency_symbol ?? '',
+        name: row.currency_name ?? '',
+      },
+      flags: {
+        ico: row.flag_ico ?? '',
+        alt: row.flag_alt ?? '',
+        png: row.flag_png ?? '',
+        svg: row.flag_svg ?? '',
+      },
+      states: row.states?.map(s => ({
+        name: s.name,
+        code: s.code ?? '',
+        country_code: s.country_code,
+        latitude: s.latitude ?? 0,
+        longitude: s.longitude ?? 0,
+      })),
+      cities: row.cities?.map(c => ({
+        name: c.name,
+        state_code: c.state_code ?? '',
+        country_code: c.country_code,
+        latitude: c.latitude ?? 0,
+        longitude: c.longitude ?? 0,
+      })),
+    };
   }
 }

@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: .
+      target: development
+    container_name: retrieve-countries-dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - DATABASE_PATH=/app/data/countries.db
+    volumes:
+      - ./src:/app/src # hot-reload source
+      - ./test:/app/test
+      - sqlite-data-dev:/app/data
+    ports:
+      - '${PORT:-3000}:3000'
+
+volumes:
+  sqlite-data-dev:

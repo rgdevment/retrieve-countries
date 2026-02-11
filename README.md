@@ -1,82 +1,92 @@
-# Retrieve Countries (Legacy)
+# Retrieve Countries
 
-## ⚠️ Este repositorio ha sido migrado y archivado
+API REST de código abierto (MIT) para consultar datos de países, estados y ciudades del mundo.
 
-Este proyecto ha sido **migrado y mejorado** como parte de una transición hacia una arquitectura más estable y mantenible:
+## Stack
 
-- La base de datos fue migrada desde **MongoDB a MariaDB**, permitiendo mejores relaciones y rendimiento.
-- El servicio se integró en un **monorepo consolidado** junto a otros proyectos de datos abiertos.
-- Ahora se ejecuta en un **servidor propio más estable**, lo que permite mantener los servicios disponibles de forma **gratuita y continua** para la comunidad.
+| Capa | Tecnología |
+|------|-----------|
+| Framework | NestJS 11 |
+| Lenguaje | TypeScript 5.9 |
+| Base de datos | SQLite (better-sqlite3 + Kysely) |
+| Cache | In-memory (`@nestjs/cache-manager`) |
+| Runtime | Node.js >= 22 / npm >= 11 |
 
-👉 El nuevo repositorio actualizado se encuentra en:  
-🔗 [open-data-service/apps/countries](https://github.com/rgdevment/open-data-service/tree/main/apps/countries)
+## Inicio rápido
 
-> Este repositorio permanecerá como referencia histórica, pero **no recibirá más actualizaciones**.
+```bash
+# 1. Clonar e instalar
+git clone https://github.com/rgdevment/retrieve-countries
+cd retrieve-countries
+cp .env.example .env
+npm ci
 
-[![Build CI](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml/badge.svg)](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=rgdevment_retrieve-countries&metric=coverage)](https://sonarcloud.io/dashboard?id=rgdevment_retrieve-countries)
-[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=rgdevment_retrieve-countries&metric=alert_status)](https://sonarcloud.io/dashboard?id=rgdevment_retrieve-countries)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# 2. Desarrollo
+make dev          # o: npm run start:dev
 
-Retrieve Countries es una API REST de código abierto bajo la licencia MIT que te permite consultar datos sobre países, ciudades y otra información relevante en todo el mundo. Esta API está en continuo desarrollo y crecimiento.
+# 3. Tests
+make test         # o: npm test
+make test-cov     # o: npm run test:cov
+```
 
-El mantenimiento de este repositorio se ha movido a: [open-data-service/apps/countries](https://github.com/rgdevment/open-data-service/tree/main/apps/countries)
+## Docker
 
-## Disponible en otros idiomas:
-- [English (Inglés)](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
+```bash
+# Desarrollo (hot-reload)
+make docker-dev
 
-## Documentación
+# Producción (imagen optimizada ~120 MB)
+make docker-prod
 
-- [Documentación Swagger](https://countries.apirest.cl/v1/docs)
+# Parar
+make docker-dev-down
+make docker-prod-down
+```
 
-## Ejemplos de uso
+El Dockerfile usa multi-stage builds con targets `development` y `production`.
+La imagen de producción corre con usuario no-root, `dumb-init` como PID 1 y solo dependencias de producción.
 
-Puedes obtener información sobre un país y sus ciudades con esta simple llamada:
+## Variables de entorno
 
-	curl -X GET "https://countries.apirest.cl/v1/chile"
+Un solo archivo `.env` sirve para dev y prod. Ver `.env.example`:
 
-O, si lo prefieres, puedes obtener todos los países de una región específica:
+| Variable | Default | Descripción |
+|----------|---------|-------------|
+| `NODE_ENV` | `development` | `development` o `production` |
+| `PORT` | `3000` | Puerto del servidor |
+| `DATABASE_PATH` | `./data/countries.db` | Ruta del archivo SQLite |
 
-	curl -X GET "https://countries.apirest.cl/v1/region/americas"
+## Endpoints
 
-Incluso puedes obtener todos los países del mundo con una sola petición:
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/v1/health` | Health check |
+| `GET` | `/v1/all` | Todos los países (sin estados por defecto) |
+| `GET` | `/v1/:name` | País por nombre |
+| `GET` | `/v1/capital/:capital` | País por capital |
+| `GET` | `/v1/region/:region` | Países por región |
+| `GET` | `/v1/subregion/:subregion` | Países por subregión |
 
-	curl -X GET "https://countries.apirest.cl/v1/all"
+**Parámetros opcionales:** `excludeStates`, `excludeCities` (boolean).
 
-También puedes mostrar u ocultar información adicional con los siguientes **parámetros opcionales**:
+### Ejemplos
 
-- `excludeCities` (opcional): booleano
-- `excludeStates` (opcional): booleano
+```bash
+curl http://localhost:3000/v1/chile
+curl http://localhost:3000/v1/region/americas
+curl http://localhost:3000/v1/all
+```
 
-Para más información y otros endpoints, consulta la Documentación en Postman o Swagger.
+## Documentación Swagger
 
-## Instrucciones para instalación local
+Disponible en `/v1/docs` cuando la APP está corriendo.
 
-Si quieres probar el proyecto localmente o montarlo en tu propio entorno, sigue estos pasos.
+## Makefile
 
-### Requisitos
-
-- **Node.js**: 20.x LTS
-- **Yarn**: 4.4
-
-### Instalación
-
-1. Clona el repositorio:
-    - git clone https://github.com/rgdevment/retrieve-countries
-    - cd retrieve-countries
-
-2. Instala las dependencias:
-    - yarn install
-
-3. Configura las variables de entorno:
-    - cp .env.example .env
-    - Edita el archivo `.env` con tus propios valores.
-
-4. Ejecuta el proyecto:
-    - yarn start:dev
-
-Este comando levantará la API en un entorno de desarrollo.
+```
+make help         # Ver todos los comandos disponibles
+```
 
 ## Licencia
 
-Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+[MIT](LICENSE)

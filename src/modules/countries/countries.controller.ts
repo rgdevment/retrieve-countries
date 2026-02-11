@@ -1,12 +1,15 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Query } from '@nestjs/common';
-import { CountriesService } from './countries.service';
-import { CountryDto } from '../../common/dto/country.dto';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
+import { Controller, Get, HttpCode, HttpStatus, Param, Query, UseInterceptors } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CountryQueryDto } from '../../common/dto/country-query.dto';
 import { CountriesQueryDto } from '../../common/dto/countries-query.dto';
+import { CountryQueryDto } from '../../common/dto/country-query.dto';
+import { CountryDto } from '../../common/dto/country.dto';
+import { CountriesService } from './countries.service';
 
 @ApiTags('countries')
 @Controller()
+@UseInterceptors(CacheInterceptor)
+@CacheTTL(120_000) // 2 minutes cache for all country endpoints
 export class CountriesController {
   constructor(private readonly service: CountriesService) {}
 
@@ -15,14 +18,14 @@ export class CountriesController {
   @ApiOperation({
     summary: 'Get all country data',
     description: `
-      Retrieves data for all countries along with their states. 
+      Retrieves data for all countries along with their states.
       Note that obtaining a list of cities in this call is not possible due to the large number of cities globally.
-      
+
       **Optional Query Parameters:**
       - \`excludeStates=true\`: *This option is temporarily disabled until we optimize and improve the response size.*
-      
+
       **Best Practices:**
-      We recommend caching the API response to prevent excessive usage and help keep the service public and available 
+      We recommend caching the API response to prevent excessive usage and help keep the service public and available
       for everyone.
     `,
   })
@@ -58,8 +61,8 @@ export class CountriesController {
   @Get('region/:region')
   @ApiOperation({
     summary: 'Retrieve countries by region',
-    description: `Fetches a list of countries within a specified region. Optionally, you can exclude states from the 
-                  response using the \`excludeStates\` query parameter. To promote efficient API usage, please consider 
+    description: `Fetches a list of countries within a specified region. Optionally, you can exclude states from the
+                  response using the \`excludeStates\` query parameter. To promote efficient API usage, please consider
                   caching the response to minimize unnecessary requests.`,
   })
   @ApiParam({
@@ -91,7 +94,7 @@ export class CountriesController {
   @ApiOperation({
     summary: 'Retrieve countries by subregion',
     description: `Fetches a list of countries within a specified subregion. Optionally, you can exclude states from the
-                  response using the \`excludeStates\` query parameter. To promote efficient API usage, please consider 
+                  response using the \`excludeStates\` query parameter. To promote efficient API usage, please consider
                   caching the response to minimize unnecessary requests.`,
   })
   @ApiParam({
@@ -127,15 +130,15 @@ export class CountriesController {
   @ApiOperation({
     summary: 'Get country data by name',
     description: `
-      Retrieves data for a country based on its name. 
+      Retrieves data for a country based on its name.
       Includes information about the country's cities.
-      
+
       **Optional Query Parameters:**
       - \`excludeStates=true\`: Excludes states from the results.
       - \`excludeCities=true\`: Excludes cities from the results.
-      
+
       **Best Practices:**
-      It is recommended to cache API responses to prevent excessive usage and ensure the service remains available 
+      It is recommended to cache API responses to prevent excessive usage and ensure the service remains available
       to all users.
     `,
   })
@@ -184,7 +187,7 @@ export class CountriesController {
       - \`excludeCities=true\`: Excludes cities from the results.
 
       **Best Practices:**
-      It is recommended to cache API responses to prevent excessive usage and ensure the service remains available 
+      It is recommended to cache API responses to prevent excessive usage and ensure the service remains available
       to all users.
     `,
   })
