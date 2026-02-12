@@ -8,7 +8,7 @@ APP          := retrieve-countries
 DC_PROD      := docker compose -f docker-compose.yml
 DC_DEV       := docker compose -f docker-compose.dev.yml
 
-.PHONY: dev prod down logs build test install clean help
+.PHONY: dev prod down logs build test lint lint-fix format format-fix typecheck ci install clean help
 
 # ── Docker ───────────────────────────────────
 dev: ## Start dev containers (hot-reload)
@@ -33,6 +33,23 @@ build: ## Compile TypeScript
 
 test: ## Run tests
 	npm test
+
+lint: ## Run ESLint
+	npm run lint
+
+lint-fix: ## Run ESLint with auto-fix
+	npm run lint:fix
+
+format: ## Check code formatting (Prettier)
+	npm run format:check
+
+format-fix: ## Fix code formatting (Prettier)
+	npm run format
+
+typecheck: ## Type-check without emitting (tsc --noEmit)
+	npm run typecheck
+
+ci: lint format typecheck test build ## Run full CI checks locally
 
 clean: ## Remove build artifacts and caches
 	rm -rf dist coverage node_modules/.cache
