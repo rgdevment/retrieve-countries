@@ -1,6 +1,6 @@
 import { CurrencyEntity } from './currency.entity';
 import { RegionEntity } from './region.entity';
-import { StateEntity } from './state.entity';
+import { StateEntity, StateSimpleEntity } from './state.entity';
 import { SubregionEntity } from './subregion.entity';
 
 export interface TimezoneEntry {
@@ -16,6 +16,7 @@ export interface CountrySimpleEntity {
   readonly name: string;
   readonly iso2: string;
   readonly emoji: string;
+  readonly states: StateSimpleEntity[];
 }
 
 export interface CountryEntity {

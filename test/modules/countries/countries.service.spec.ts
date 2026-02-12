@@ -1,7 +1,8 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
-import { CountryEntity } from '../../../src/modules/countries/entities';
+import { ExcludeOption, ResponseType } from '../../../src/modules/countries/dto/country-query.dto';
+import { CountryEntity, CountrySimpleEntity } from '../../../src/modules/countries/entities';
 import { CountryRepository } from '../../../src/modules/countries/repositories/country.repository.interface';
 
 describe('CountriesService', () => {
@@ -95,6 +96,59 @@ describe('CountriesService', () => {
     it('should throw NO_CONTENT when empty', async () => {
       jest.spyOn(repository, 'findAll').mockResolvedValue([]);
       await expectNoContent(() => service.findAllCountries());
+    });
+
+    it('should include simple states and cities when type=simple', async () => {
+      jest.spyOn(repository, 'findAll').mockResolvedValue([mockCountry]);
+
+      const result = await service.findAllCountries(undefined, ResponseType.SIMPLE);
+
+      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: true, includeCities: true });
+      const country = (result as CountrySimpleEntity[])[0];
+      expect(country).toEqual({
+        id: 44,
+        name: 'Chile',
+        iso2: 'CL',
+        emoji: '🇨🇱',
+        states: [{ id: 2113, name: 'Antofagasta', iso2: 'AN', cities: [] }],
+      });
+    });
+
+    it('should exclude cities but keep states when type=simple and exclude=cities', async () => {
+      jest.spyOn(repository, 'findAll').mockResolvedValue([mockCountry]);
+
+      const result = await service.findAllCountries(ExcludeOption.CITIES, ResponseType.SIMPLE);
+
+      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: true, includeCities: false });
+      const country = (result as CountrySimpleEntity[])[0];
+      expect(country.states).toHaveLength(1);
+      expect(country.states[0].cities).toHaveLength(0);
+    });
+
+    it('should exclude states and cities when type=simple and exclude=states', async () => {
+      jest.spyOn(repository, 'findAll').mockResolvedValue([{ ...mockCountry, states: [] }]);
+
+      const result = await service.findAllCountries(ExcludeOption.STATES, ResponseType.SIMPLE);
+
+      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: false, includeCities: false });
+      const country = (result as CountrySimpleEntity[])[0];
+      expect(country.states).toHaveLength(0);
+    });
+
+    it('should respect exclude=cities without type (full response)', async () => {
+      jest.spyOn(repository, 'findAll').mockResolvedValue([mockCountry]);
+
+      await service.findAllCountries(ExcludeOption.CITIES);
+
+      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: true, includeCities: false });
+    });
+
+    it('should respect exclude=states without type (full response)', async () => {
+      jest.spyOn(repository, 'findAll').mockResolvedValue([{ ...mockCountry, states: [] }]);
+
+      await service.findAllCountries(ExcludeOption.STATES);
+
+      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: false, includeCities: false });
     });
   });
 

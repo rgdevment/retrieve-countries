@@ -1,3 +1,4 @@
+export { CitySimpleDto } from './city-simple.dto';
 export { CityDto } from './city.dto';
 export { ExcludeOption, ResponseType } from './country-query.dto';
 export { CountrySimpleDto } from './country-simple.dto';
@@ -5,6 +6,7 @@ export { CountryDto } from './country.dto';
 export { CurrencyDto } from './currency.dto';
 export { RegionDto } from './region.dto';
 export { CitySearchItemDto, CountrySearchItemDto, SearchResultDto, StateSearchItemDto } from './search-result.dto';
+export { StateSimpleDto } from './state-simple.dto';
 export { StateDto } from './state.dto';
 export { SubregionDto } from './subregion.dto';
 export { TimezoneDto } from './timezone.dto';

@@ -2,15 +2,17 @@ import { CacheInterceptor } from '@nestjs/cache-manager';
 import { Controller, Get, HttpCode, HttpStatus, Param, Query, UseInterceptors } from '@nestjs/common';
 import { ApiExtraModels, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags, getSchemaPath } from '@nestjs/swagger';
 import { CountriesService } from './countries.service';
+import { CitySimpleDto } from './dto/city-simple.dto';
 import { ExcludeOption, ResponseType } from './dto/country-query.dto';
 import { CountrySimpleDto } from './dto/country-simple.dto';
 import { CountryDto } from './dto/country.dto';
+import { StateSimpleDto } from './dto/state-simple.dto';
 import { CountryEntity, CountrySimpleEntity } from './entities';
 
 @ApiTags('Countries')
 @Controller()
 @UseInterceptors(CacheInterceptor)
-@ApiExtraModels(CountryDto, CountrySimpleDto)
+@ApiExtraModels(CountryDto, CountrySimpleDto, StateSimpleDto, CitySimpleDto)
 export class CountriesController {
   constructor(private readonly service: CountriesService) {}
 

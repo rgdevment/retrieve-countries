@@ -1,6 +1,13 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ExcludeOption, ResponseType } from './dto/country-query.dto';
-import { CityEntity, CountryEntity, CountrySimpleEntity, StateEntity } from './entities';
+import {
+  CityEntity,
+  CitySimpleEntity,
+  CountryEntity,
+  CountrySimpleEntity,
+  StateEntity,
+  StateSimpleEntity,
+} from './entities';
 import { CountryRepository, HierarchyOptions, SearchResult } from './repositories/country.repository.interface';
 
 @Injectable()
@@ -17,13 +24,12 @@ export class CountriesService {
     exclude?: ExcludeOption,
     type?: ResponseType,
   ): Promise<CountryEntity[] | CountrySimpleEntity[]> {
-    const isSimple = type === ResponseType.SIMPLE;
-    const options = isSimple ? { includeStates: false, includeCities: false } : this.parseExclude(exclude);
+    const options = this.parseExclude(exclude);
 
     const countries = await this.repo.findAll(options);
     if (!countries.length) throw new HttpException('No content', HttpStatus.NO_CONTENT);
 
-    return isSimple ? countries.map(this.toSimple) : countries;
+    return type === ResponseType.SIMPLE ? countries.map(c => this.toSimple(c)) : countries;
   }
 
   /** Smart Resolve — find a country by ID, ISO2, ISO3, or name. */
@@ -32,13 +38,12 @@ export class CountriesService {
     exclude?: ExcludeOption,
     type?: ResponseType,
   ): Promise<CountryEntity | CountrySimpleEntity> {
-    const isSimple = type === ResponseType.SIMPLE;
-    const options = isSimple ? { includeStates: false, includeCities: false } : this.parseExclude(exclude);
+    const options = this.parseExclude(exclude);
 
     const country = await this.repo.findByTerm(term, options);
     if (!country) throw new HttpException('No content', HttpStatus.NO_CONTENT);
 
-    return isSimple ? this.toSimple(country) : country;
+    return type === ResponseType.SIMPLE ? this.toSimple(country) : country;
   }
 
   /** Filter countries by region/continent name. */
@@ -47,13 +52,12 @@ export class CountriesService {
     exclude?: ExcludeOption,
     type?: ResponseType,
   ): Promise<CountryEntity[] | CountrySimpleEntity[]> {
-    const isSimple = type === ResponseType.SIMPLE;
-    const options = isSimple ? { includeStates: false, includeCities: false } : this.parseExclude(exclude);
+    const options = this.parseExclude(exclude);
 
     const countries = await this.repo.findByRegion(name, options);
     if (!countries.length) throw new HttpException('No content', HttpStatus.NO_CONTENT);
 
-    return isSimple ? countries.map(this.toSimple) : countries;
+    return type === ResponseType.SIMPLE ? countries.map(c => this.toSimple(c)) : countries;
   }
 
   /** Filter countries by subregion name. */
@@ -62,13 +66,12 @@ export class CountriesService {
     exclude?: ExcludeOption,
     type?: ResponseType,
   ): Promise<CountryEntity[] | CountrySimpleEntity[]> {
-    const isSimple = type === ResponseType.SIMPLE;
-    const options = isSimple ? { includeStates: false, includeCities: false } : this.parseExclude(exclude);
+    const options = this.parseExclude(exclude);
 
     const countries = await this.repo.findBySubregion(name, options);
     if (!countries.length) throw new HttpException('No content', HttpStatus.NO_CONTENT);
 
-    return isSimple ? countries.map(this.toSimple) : countries;
+    return type === ResponseType.SIMPLE ? countries.map(c => this.toSimple(c)) : countries;
   }
 
   // ── States ──────────────────────────────────────────────────
@@ -118,6 +121,23 @@ export class CountriesService {
       name: country.name,
       iso2: country.iso2,
       emoji: country.emoji,
+      states: (country.states ?? []).map(s => this.toSimpleState(s)),
+    };
+  }
+
+  private toSimpleState(state: StateEntity): StateSimpleEntity {
+    return {
+      id: state.id,
+      name: state.name,
+      iso2: state.iso2,
+      cities: (state.cities ?? []).map(c => this.toSimpleCity(c)),
+    };
+  }
+
+  private toSimpleCity(city: CityEntity): CitySimpleEntity {
+    return {
+      id: city.id,
+      name: city.name,
     };
   }
 }

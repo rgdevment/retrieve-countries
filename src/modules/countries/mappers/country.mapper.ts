@@ -85,6 +85,7 @@ export function toCountrySimple(row: CountryRow): CountrySimpleEntity {
     name: row.name,
     iso2: s(row.iso2),
     emoji: s(row.emoji),
+    states: [],
   };
 }
 

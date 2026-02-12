@@ -7,3 +7,8 @@ export interface CityEntity {
   readonly longitude: number;
   readonly wikiDataId: string;
 }
+
+export interface CitySimpleEntity {
+  readonly id: number;
+  readonly name: string;
+}

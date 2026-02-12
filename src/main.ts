@@ -11,7 +11,7 @@ async function bootstrap() {
 
   app.use(compression({ level: 6, threshold: 2048 }));
 
-  app.setGlobalPrefix('api/v1', {
+  app.setGlobalPrefix('v1', {
     exclude: [{ path: 'health', method: RequestMethod.GET }],
   });
 

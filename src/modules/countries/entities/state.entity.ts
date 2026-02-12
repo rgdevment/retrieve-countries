@@ -1,4 +1,4 @@
-import { CityEntity } from './city.entity';
+import { CityEntity, CitySimpleEntity } from './city.entity';
 
 export interface StateEntity {
   readonly id: number;
@@ -14,4 +14,11 @@ export interface StateEntity {
   readonly longitude: number;
   readonly wikiDataId: string;
   readonly cities: CityEntity[];
+}
+
+export interface StateSimpleEntity {
+  readonly id: number;
+  readonly name: string;
+  readonly iso2: string;
+  readonly cities: CitySimpleEntity[];
 }

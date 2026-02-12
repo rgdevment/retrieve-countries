@@ -174,7 +174,7 @@ export class CountryRepositorySqlite implements CountryRepository {
     for (const c of data.countries) {
       if (countries.length >= limit) break;
       if (normalize(c.name).includes(q)) {
-        countries.push({ id: c.id, name: c.name, iso2: c.iso2 ?? '', emoji: c.emoji ?? '' });
+        countries.push({ id: c.id, name: c.name, iso2: c.iso2 ?? '', emoji: c.emoji ?? '', states: [] });
       }
     }
 
