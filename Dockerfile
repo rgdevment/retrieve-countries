@@ -29,7 +29,7 @@ FROM node:24-alpine AS production
 
 # Security: no root, no shell attack surface
 RUN addgroup -S app && adduser -S app -G app \
-    && apk --no-cache add dumb-init \
+    && apk --no-cache add tini \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /app
@@ -52,6 +52,6 @@ USER app
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# dumb-init handles PID 1 properly (signal forwarding)
-ENTRYPOINT ["dumb-init", "--"]
+# tini handles PID 1 properly (signal forwarding, zombie reaping)
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "dist/main"]
