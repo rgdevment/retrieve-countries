@@ -15,6 +15,9 @@ async function bootstrap() {
     exclude: [{ path: 'health', method: RequestMethod.GET }],
   });
 
+  app.enableCors();
+  app.getHttpAdapter().getInstance().set('trust proxy', true);
+
   const config = new DocumentBuilder()
     .setTitle('Retrieve Countries API')
     .setDescription(
