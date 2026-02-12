@@ -27,10 +27,16 @@ RUN npm run build
 # =============================================
 FROM node:24-alpine AS production
 
-# Security: no root, no shell attack surface
-RUN addgroup -S app && adduser -S app -G app \
-    && apk --no-cache add tini \
+# Install build tools for native modules (better-sqlite3) and tini
+RUN apk --no-cache add \
+    python3 \
+    make \
+    g++ \
+    tini \
     && rm -rf /var/cache/apk/*
+
+# Security: no root, no shell attack surface
+RUN addgroup -S app && adduser -S app -G app
 
 WORKDIR /app
 
@@ -39,8 +45,8 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/package-lock.json ./package-lock.json
 
-# Install ONLY production deps
-RUN npm ci --omit=dev --ignore-scripts \
+# Install ONLY production deps (build better-sqlite3 native module)
+RUN npm ci --omit=dev \
     && npm cache clean --force \
     && rm -rf /tmp/*
 
