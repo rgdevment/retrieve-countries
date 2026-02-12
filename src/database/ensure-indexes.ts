@@ -33,7 +33,7 @@ db.pragma('journal_mode = WAL');
 
 let created = 0;
 for (const ddl of indexes) {
-  const info = db.exec(ddl);
+  db.exec(ddl);
   created++;
 }
 
