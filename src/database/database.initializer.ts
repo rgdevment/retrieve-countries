@@ -11,7 +11,13 @@ export class DatabaseInitializer implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     await this.validateSchema();
-    await this.ensureIndexes();
+
+    if (process.env.NODE_ENV === 'production') {
+      await this.verifyIndexes();
+    } else {
+      await this.ensureIndexes();
+    }
+
     this.logger.log('Database validated — schema and indexes OK.');
   }
 
@@ -55,6 +61,40 @@ export class DatabaseInitializer implements OnModuleInit {
 
     for (const ddl of indexes) {
       await sql.raw(ddl).execute(this.db);
+    }
+  }
+
+  private async verifyIndexes(): Promise<void> {
+    const expected = [
+      'idx_subregions_region_id',
+      'idx_countries_region_id',
+      'idx_countries_subregion_id',
+      'idx_states_country_id',
+      'idx_cities_state_id',
+      'idx_cities_country_id',
+      'idx_regions_name',
+      'idx_subregions_name',
+      'idx_countries_name',
+      'idx_states_name',
+      'idx_cities_name',
+      'idx_countries_capital',
+      'idx_countries_iso2',
+      'idx_countries_iso3',
+      'idx_states_code',
+    ];
+
+    const result = await sql<{ name: string }>`
+      SELECT name FROM sqlite_master WHERE type = 'index'
+    `.execute(this.db);
+
+    const found = new Set(result.rows.map(r => r.name));
+    const missing = expected.filter(idx => !found.has(idx));
+
+    if (missing.length) {
+      throw new Error(
+        `Database is missing indexes: ${missing.join(', ')}. ` +
+          'Run the ensure-indexes script before starting in production.',
+      );
     }
   }
 }

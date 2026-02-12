@@ -12,17 +12,21 @@ export const DatabaseProvider: Provider = {
   useFactory: (config: ConfigService): Kysely<Database> => {
     const dbPath = config.getOrThrow<string>('DATABASE_PATH');
     const logger = new Logger('DatabaseProvider');
+    const isProduction = config.get('NODE_ENV') === 'production';
 
-    const native = new BetterSqlite3(dbPath);
+    const native = new BetterSqlite3(dbPath, { readonly: isProduction });
 
-    native.pragma(`journal_mode = ${config.getOrThrow('SQLITE_JOURNAL_MODE')}`);
+    if (!isProduction) {
+      native.pragma(`journal_mode = ${config.getOrThrow('SQLITE_JOURNAL_MODE')}`);
+      native.pragma(`busy_timeout = ${config.getOrThrow('SQLITE_BUSY_TIMEOUT')}`);
+      native.pragma(`synchronous = ${config.getOrThrow('SQLITE_SYNCHRONOUS')}`);
+    }
+
     native.pragma('foreign_keys = ON');
-    native.pragma(`busy_timeout = ${config.getOrThrow('SQLITE_BUSY_TIMEOUT')}`);
-    native.pragma(`synchronous = ${config.getOrThrow('SQLITE_SYNCHRONOUS')}`);
     native.pragma(`cache_size = ${config.getOrThrow('SQLITE_CACHE_SIZE')}`);
     native.pragma('temp_store = MEMORY');
 
-    logger.log(`SQLite connected → ${dbPath}`);
+    logger.log(`SQLite connected → ${dbPath} (${isProduction ? 'readonly' : 'read-write'})`);
 
     return new Kysely<Database>({ dialect: new SqliteDialect({ database: native }) });
   },

@@ -58,6 +58,6 @@ USER app
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# tini handles PID 1 properly (signal forwarding, zombie reaping)
+# 1) Ensure indexes (read-write), then 2) start server (readonly)
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/main"]
+CMD ["sh", "-c", "node dist/database/ensure-indexes.js && node dist/main"]
