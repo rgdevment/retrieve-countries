@@ -5,51 +5,17 @@ import { CountriesService } from '../../../src/modules/countries/countries.servi
 import { ExcludeOption, ResponseType } from '../../../src/modules/countries/dto/country-query.dto';
 import { CountryEntity } from '../../../src/modules/countries/entities';
 import { CountryRepository } from '../../../src/modules/countries/repositories/country.repository.interface';
+import { MOCK_STATE_NO_CITIES, mockCountryEntity } from '../../fixtures/country.fixtures';
 
 describe('CountriesService', () => {
   let service: CountriesService;
   let repository: CountryRepository;
   let cache: CountryCacheService;
 
-  const mockCountry: CountryEntity = {
-    id: 44,
-    name: 'Chile',
-    iso2: 'CL',
-    iso3: 'CHL',
-    numeric_code: '152',
-    capital: 'Santiago',
+  const mockCountry = mockCountryEntity({
     phonecode: '+56',
-    tld: '.cl',
-    native: 'Chile',
-    nationality: 'Chilean',
-    region: { name: 'Americas', translations: null, wikiDataId: '' },
-    subregion: { name: 'South America', translations: null, wikiDataId: '' },
-    latitude: -35.6751,
-    longitude: -71.543,
-    emoji: '🇨🇱',
-    emojiU: 'U+1F1E8 U+1F1F1',
-    timezones: [],
-    translations: null,
-    wikiDataId: '',
-    currency: { code: 'CLP', name: 'Chilean Peso', symbol: '$' },
-    states: [
-      {
-        id: 2113,
-        name: 'Antofagasta',
-        iso2: 'AN',
-        type: 'region',
-        country_code: 'CL',
-        fips_code: '',
-        level: null,
-        parent_id: null,
-        native: '',
-        latitude: -23.65,
-        longitude: -70.4,
-        wikiDataId: '',
-        cities: [],
-      },
-    ],
-  };
+    states: [MOCK_STATE_NO_CITIES],
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

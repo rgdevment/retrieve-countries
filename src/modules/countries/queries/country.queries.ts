@@ -90,14 +90,18 @@ export function selectCityNamesForSearch(db: Kysely<Database>): Promise<CitySear
   return db.selectFrom('cities').select(['id', 'name', 'state_id', 'country_id']).execute();
 }
 
-export async function selectCitiesByStateId(db: Kysely<Database>, stateId: number): Promise<CityEntity[]> {
-  const rows = await db
-    .selectFrom('cities')
-    .select(['id', 'name', 'state_code', 'country_code', 'latitude', 'longitude', 'wikiDataId'])
-    .where('state_id', '=', stateId)
-    .execute();
+interface CityQueryRow {
+  readonly id: number;
+  readonly name: string;
+  readonly state_code: string;
+  readonly country_code: string;
+  readonly latitude: number;
+  readonly longitude: number;
+  readonly wikiDataId: string | null;
+}
 
-  return rows.map(r => ({
+function toCityFromRow(r: CityQueryRow): CityEntity {
+  return {
     id: r.id,
     name: r.name,
     state_code: r.state_code,
@@ -105,7 +109,17 @@ export async function selectCitiesByStateId(db: Kysely<Database>, stateId: numbe
     latitude: r.latitude,
     longitude: r.longitude,
     wikiDataId: r.wikiDataId ?? '',
-  }));
+  };
+}
+
+export async function selectCitiesByStateId(db: Kysely<Database>, stateId: number): Promise<CityEntity[]> {
+  const rows = await db
+    .selectFrom('cities')
+    .select(['id', 'name', 'state_code', 'country_code', 'latitude', 'longitude', 'wikiDataId'])
+    .where('state_id', '=', stateId)
+    .execute();
+
+  return rows.map(toCityFromRow);
 }
 
 export async function selectCitiesByStateIds(
@@ -123,15 +137,7 @@ export async function selectCitiesByStateIds(
   const map = new Map<number, CityEntity[]>();
   for (const r of rows) {
     const list = map.get(r.state_id) ?? [];
-    list.push({
-      id: r.id,
-      name: r.name,
-      state_code: r.state_code,
-      country_code: r.country_code,
-      latitude: r.latitude,
-      longitude: r.longitude,
-      wikiDataId: r.wikiDataId ?? '',
-    });
+    list.push(toCityFromRow(r));
     map.set(r.state_id, list);
   }
   return map;

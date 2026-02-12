@@ -1,12 +1,3 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { GeoAreaDto } from './geo-area.dto';
 
-export class SubregionDto {
-  @ApiProperty({ example: 'América del Sur' })
-  readonly name!: string;
-
-  @ApiProperty({ example: { es: 'América del Sur' }, nullable: true })
-  readonly translations!: Record<string, string> | null;
-
-  @ApiProperty({ example: 'Q18' })
-  readonly wikiDataId!: string;
-}
+export class SubregionDto extends GeoAreaDto {}

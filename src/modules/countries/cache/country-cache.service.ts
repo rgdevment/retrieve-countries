@@ -3,14 +3,8 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { ExcludeOption, ResponseType } from '../dto/country-query.dto';
-import {
-  CityEntity,
-  CitySimpleEntity,
-  CountryEntity,
-  CountrySimpleEntity,
-  StateEntity,
-  StateSimpleEntity,
-} from '../entities';
+import { CountryEntity } from '../entities';
+import { parseExclude, toSimpleCountry } from '../helpers/simplify';
 import { CountryRepository, HierarchyOptions } from '../repositories/country.repository.interface';
 import { ALL_CACHE_COMBOS, CACHE_DIR, getCacheFileName } from './country-cache.constants';
 
@@ -52,9 +46,9 @@ export class CountryCacheService implements OnModuleInit {
     fullVariants.set(this.hierarchyKey({ includeStates: false, includeCities: false }), onlyCountries);
 
     for (const combo of ALL_CACHE_COMBOS) {
-      const options = this.parseExclude(combo.exclude);
+      const options = parseExclude(combo.exclude);
       const full = fullVariants.get(this.hierarchyKey(options))!;
-      const data = combo.type === ResponseType.SIMPLE ? full.map(c => this.toSimple(c)) : full;
+      const data = combo.type === ResponseType.SIMPLE ? full.map(toSimpleCountry) : full;
 
       const fileName = getCacheFileName(combo.type, combo.exclude);
       const filePath = join(CACHE_DIR, fileName);
@@ -74,44 +68,7 @@ export class CountryCacheService implements OnModuleInit {
     this.logger.log(`Static JSON cache ready — ${this.memoryCache.size} files generated in ${CACHE_DIR}`);
   }
 
-  private parseExclude(exclude?: ExcludeOption): HierarchyOptions {
-    switch (exclude) {
-      case ExcludeOption.STATES:
-        return { includeStates: false, includeCities: false };
-      case ExcludeOption.CITIES:
-        return { includeStates: true, includeCities: false };
-      default:
-        return { includeStates: true, includeCities: true };
-    }
-  }
-
   private hierarchyKey(opts: HierarchyOptions): string {
     return `${opts.includeStates}-${opts.includeCities}`;
-  }
-
-  private toSimple(country: CountryEntity): CountrySimpleEntity {
-    return {
-      id: country.id,
-      name: country.name,
-      iso2: country.iso2,
-      emoji: country.emoji,
-      states: (country.states ?? []).map(s => this.toSimpleState(s)),
-    };
-  }
-
-  private toSimpleState(state: StateEntity): StateSimpleEntity {
-    return {
-      id: state.id,
-      name: state.name,
-      iso2: state.iso2,
-      cities: (state.cities ?? []).map(c => this.toSimpleCity(c)),
-    };
-  }
-
-  private toSimpleCity(city: CityEntity): CitySimpleEntity {
-    return {
-      id: city.id,
-      name: city.name,
-    };
   }
 }

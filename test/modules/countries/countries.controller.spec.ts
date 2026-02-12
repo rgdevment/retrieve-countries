@@ -5,61 +5,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { gzipSync } from 'zlib';
 import { CountriesController } from '../../../src/modules/countries/countries.controller';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
-import { CountryEntity } from '../../../src/modules/countries/entities';
+import { mockCountryEntity } from '../../fixtures/country.fixtures';
 
 describe('CountriesController', () => {
   let controller: CountriesController;
   let service: CountriesService;
 
-  const mockCountryDto: CountryEntity = {
-    id: 44,
-    name: 'Chile',
-    iso2: 'CL',
-    iso3: 'CHL',
-    numeric_code: '152',
-    capital: 'Santiago',
-    phonecode: '56',
-    tld: '.cl',
-    native: 'Chile',
-    nationality: 'Chilean',
-    region: { name: 'Americas', translations: null, wikiDataId: '' },
-    subregion: { name: 'South America', translations: null, wikiDataId: '' },
-    latitude: -35.6751,
-    longitude: -71.543,
-    emoji: '🇨🇱',
-    emojiU: 'U+1F1E8 U+1F1F1',
-    timezones: [],
-    translations: null,
-    wikiDataId: '',
-    currency: { code: 'CLP', name: 'Chilean Peso', symbol: '$' },
-    states: [
-      {
-        id: 2113,
-        name: 'Antofagasta',
-        iso2: 'AN',
-        type: 'region',
-        country_code: 'CL',
-        fips_code: '',
-        level: null,
-        parent_id: null,
-        native: '',
-        latitude: -23.65,
-        longitude: -70.4,
-        wikiDataId: '',
-        cities: [
-          {
-            id: 21553,
-            name: 'Calama',
-            state_code: 'AN',
-            country_code: 'CL',
-            latitude: -22.46,
-            longitude: -68.93,
-            wikiDataId: '',
-          },
-        ],
-      },
-    ],
-  };
+  const mockCountryDto = mockCountryEntity();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
