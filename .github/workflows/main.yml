@@ -151,6 +151,8 @@ jobs:
           path: coverage/
 
       - uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
             -Dsonar.projectKey=${{ secrets.SONAR_KEY_RC }}
@@ -158,5 +160,3 @@ jobs:
             -Dsonar.sources=src
             -Dsonar.tests=test
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_RC }}
