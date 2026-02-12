@@ -9,12 +9,9 @@ import {
   TimezoneEntry,
 } from '../entities';
 
-// ── Null coalescing helpers ─────────────────────────────────
-
 const s = (v: string | null): string => v ?? '';
 const n = (v: number | null): number => v ?? 0;
 
-/** Parse a JSON text column into a typed object, returning null on failure. */
 function parseJson<T>(raw: string | null): T | null {
   if (!raw) return null;
   try {
@@ -24,9 +21,6 @@ function parseJson<T>(raw: string | null): T | null {
   }
 }
 
-// ── DB Row → Entity mappers ─────────────────────────────────
-
-/** Generic helper for region and subregion entities */
 function toRegionOrSubregionEntity<T extends { name: string; translations: string | null; wikiDataId: string | null }>(
   row: T,
 ) {

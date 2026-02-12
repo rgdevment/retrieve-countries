@@ -1,7 +1,5 @@
 import type { Generated, Insertable, Selectable } from 'kysely';
 
-// ─── Table definitions ──────────────────────────────────────
-
 export interface RegionTable {
   id: Generated<number>;
   name: string;
@@ -87,8 +85,6 @@ export interface CityTable {
   wikiDataId: string | null;
 }
 
-// ─── Database map ────────────────────────────────────────────
-
 export interface Database {
   regions: RegionTable;
   subregions: SubregionTable;
@@ -97,15 +93,11 @@ export interface Database {
   cities: CityTable;
 }
 
-// ─── Row types (what comes out of SELECT) ────────────────────
-
 export type RegionRow = Selectable<RegionTable>;
 export type SubregionRow = Selectable<SubregionTable>;
 export type CountryRow = Selectable<CountryTable>;
 export type StateRow = Selectable<StateTable>;
 export type CityRow = Selectable<CityTable>;
-
-// ─── Insert types ────────────────────────────────────────────
 
 export type NewRegion = Insertable<RegionTable>;
 export type NewSubregion = Insertable<SubregionTable>;

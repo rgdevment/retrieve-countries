@@ -18,7 +18,6 @@ describe('CountryRepositorySqlite', () => {
 
     db = new Kysely<Database>({ dialect: new SqliteDialect({ database: native }) });
 
-    // Schema mirrors DatabaseInitializer (new 5-table schema)
     await sql`
       CREATE TABLE regions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,14 +119,12 @@ describe('CountryRepositorySqlite', () => {
       )
     `.execute(db);
 
-    // Seed regions & subregions
     await db.insertInto('regions').values({ name: 'Americas', updated_at: '2023-01-01', flag: 1 }).execute();
     await db
       .insertInto('subregions')
       .values({ name: 'South America', region_id: 1, updated_at: '2023-01-01', flag: 1 })
       .execute();
 
-    // Seed countries
     await db
       .insertInto('countries')
       .values({
@@ -184,7 +181,6 @@ describe('CountryRepositorySqlite', () => {
       })
       .execute();
 
-    // States
     await db
       .insertInto('states')
       .values({
@@ -215,7 +211,6 @@ describe('CountryRepositorySqlite', () => {
       })
       .execute();
 
-    // Cities
     await db
       .insertInto('cities')
       .values({
@@ -254,8 +249,6 @@ describe('CountryRepositorySqlite', () => {
   afterEach(async () => {
     await db.destroy();
   });
-
-  // ── findAll ─────────────────────────────────────────────────
 
   describe('findAll', () => {
     it('should return all countries with states and cities', async () => {
@@ -311,8 +304,6 @@ describe('CountryRepositorySqlite', () => {
       expect(result).toEqual([]);
     });
   });
-
-  // ── findByTerm ──────────────────────────────────────────────
 
   describe('findByTerm', () => {
     it('should find a country by name', async () => {
@@ -406,8 +397,6 @@ describe('CountryRepositorySqlite', () => {
     });
   });
 
-  // ── findByRegion ────────────────────────────────────────────
-
   describe('findByRegion', () => {
     it('should return countries in the specified region', async () => {
       const result = await repository.findByRegion('Americas', fullOptions);
@@ -422,8 +411,6 @@ describe('CountryRepositorySqlite', () => {
     });
   });
 
-  // ── findBySubregion ─────────────────────────────────────────
-
   describe('findBySubregion', () => {
     it('should return countries in the specified subregion', async () => {
       const result = await repository.findBySubregion('South America', fullOptions);
@@ -437,8 +424,6 @@ describe('CountryRepositorySqlite', () => {
       expect(result).toEqual([]);
     });
   });
-
-  // ── findStateById ───────────────────────────────────────────
 
   describe('findStateById', () => {
     it('should return a state with its cities', async () => {
@@ -465,8 +450,6 @@ describe('CountryRepositorySqlite', () => {
     });
   });
 
-  // ── findCityById ────────────────────────────────────────────
-
   describe('findCityById', () => {
     it('should return a city by ID', async () => {
       const result = await repository.findCityById(1);
@@ -482,8 +465,6 @@ describe('CountryRepositorySqlite', () => {
       expect(result).toBeNull();
     });
   });
-
-  // ── search ──────────────────────────────────────────────────
 
   describe('search', () => {
     it('should find countries by name', async () => {

@@ -3,12 +3,6 @@ import { Kysely, sql } from 'kysely';
 import { DATABASE_TOKEN } from './database.provider';
 import { Database } from './database.types';
 
-/**
- * Validates the SQLite database on every application boot.
- *
- * 1. Checks that all required tables exist — fails fast if any are missing.
- * 2. Ensures all indexes exist (CREATE INDEX IF NOT EXISTS) on every boot.
- */
 @Injectable()
 export class DatabaseInitializer implements OnModuleInit {
   private readonly logger = new Logger(DatabaseInitializer.name);
@@ -20,8 +14,6 @@ export class DatabaseInitializer implements OnModuleInit {
     await this.ensureIndexes();
     this.logger.log('Database validated — schema and indexes OK.');
   }
-
-  // ── Schema validation ───────────────────────────────────────
 
   private async validateSchema(): Promise<void> {
     const required = ['regions', 'subregions', 'countries', 'states', 'cities'];
@@ -42,24 +34,19 @@ export class DatabaseInitializer implements OnModuleInit {
     }
   }
 
-  // ── Index management (runs on EVERY boot) ───────────────────
-
   private async ensureIndexes(): Promise<void> {
     const indexes = [
-      // FK indexes
       'CREATE INDEX IF NOT EXISTS idx_subregions_region_id   ON subregions(region_id)',
       'CREATE INDEX IF NOT EXISTS idx_countries_region_id    ON countries(region_id)',
       'CREATE INDEX IF NOT EXISTS idx_countries_subregion_id ON countries(subregion_id)',
       'CREATE INDEX IF NOT EXISTS idx_states_country_id      ON states(country_id)',
       'CREATE INDEX IF NOT EXISTS idx_cities_state_id        ON cities(state_id)',
       'CREATE INDEX IF NOT EXISTS idx_cities_country_id      ON cities(country_id)',
-      // Name lookups (COLLATE NOCASE)
       'CREATE INDEX IF NOT EXISTS idx_regions_name    ON regions(name COLLATE NOCASE)',
       'CREATE INDEX IF NOT EXISTS idx_subregions_name ON subregions(name COLLATE NOCASE)',
       'CREATE INDEX IF NOT EXISTS idx_countries_name  ON countries(name COLLATE NOCASE)',
       'CREATE INDEX IF NOT EXISTS idx_states_name     ON states(name COLLATE NOCASE)',
       'CREATE INDEX IF NOT EXISTS idx_cities_name     ON cities(name COLLATE NOCASE)',
-      // Common query patterns
       'CREATE INDEX IF NOT EXISTS idx_countries_capital ON countries(capital COLLATE NOCASE)',
       'CREATE INDEX IF NOT EXISTS idx_countries_iso2    ON countries(iso2)',
       'CREATE INDEX IF NOT EXISTS idx_countries_iso3    ON countries(iso3)',

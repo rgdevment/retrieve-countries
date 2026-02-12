@@ -1,5 +1,3 @@
-export interface SubregionEntity {
-  readonly name: string;
-  readonly translations: Record<string, string> | null;
-  readonly wikiDataId: string;
-}
+import type { GeoAreaEntity } from './region.entity';
+
+export type SubregionEntity = GeoAreaEntity;

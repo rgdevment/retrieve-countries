@@ -54,3 +54,6 @@ pids
 *.sqlite3-journal
 *.sqlite3-wal
 *.sqlite3-shm
+
+# Static JSON cache (generated on boot)
+/data/cache

@@ -1,12 +1,10 @@
-/** Remove diacritics and lowercase for accent-insensitive comparison. */
 export function normalize(str: string): string {
   return str
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replaceAll(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 }
 
-/** Find the best match ignoring case/accents. Priority: exact → starts-with → includes. */
 export function bestMatch<T>(query: string, items: T[], key: (item: T) => string): T | null {
   const q = normalize(query);
   let startsWithMatch: T | null = null;

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CountryCacheService } from './cache';
 import { CitiesController } from './cities.controller';
 import { CountriesController } from './countries.controller';
 import { CountriesService } from './countries.service';
@@ -7,7 +8,11 @@ import { SearchController } from './search.controller';
 import { StatesController } from './states.controller';
 
 @Module({
-  providers: [CountriesService, { provide: 'CountryRepository', useClass: CountryRepositorySqlite }],
+  providers: [
+    CountriesService,
+    CountryCacheService,
+    { provide: 'CountryRepository', useClass: CountryRepositorySqlite },
+  ],
   controllers: [StatesController, CitiesController, SearchController, CountriesController],
 })
 export class CountriesModule {}
