@@ -112,4 +112,22 @@ describe('CountriesController', () => {
       await expect(controller.findByRegion('Unknown')).rejects.toThrow(HttpException);
     });
   });
+
+  describe('findBySubregion', () => {
+    it('should return countries in the specified subregion', async () => {
+      jest.spyOn(service, 'findCountriesBySubregion').mockResolvedValue([mockCountryDto]);
+
+      const result = await controller.findBySubregion('South America');
+
+      expect(result).toEqual([mockCountryDto]);
+      expect(service.findCountriesBySubregion).toHaveBeenCalledWith('South America', undefined, undefined);
+    });
+
+    it('should propagate NO_CONTENT', async () => {
+      jest
+        .spyOn(service, 'findCountriesBySubregion')
+        .mockRejectedValue(new HttpException('No content', HttpStatus.NO_CONTENT));
+      await expect(controller.findBySubregion('Unknown')).rejects.toThrow(HttpException);
+    });
+  });
 });

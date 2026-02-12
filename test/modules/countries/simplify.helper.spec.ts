@@ -1,9 +1,5 @@
 import { ExcludeOption } from '../../../src/modules/countries/dto/country-query.dto';
-import {
-  CityEntity,
-  CountryEntity,
-  StateEntity,
-} from '../../../src/modules/countries/entities';
+import { CityEntity, CountryEntity, StateEntity } from '../../../src/modules/countries/entities';
 import {
   parseExclude,
   toSimpleCity,

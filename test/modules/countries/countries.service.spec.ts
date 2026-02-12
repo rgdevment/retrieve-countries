@@ -123,6 +123,46 @@ describe('CountriesService', () => {
       jest.spyOn(repository, 'findByRegion').mockResolvedValue([]);
       await expectNoContent(() => service.findCountriesByRegion('Unknown'));
     });
+
+    it('should return SIMPLE countries', async () => {
+      jest.spyOn(repository, 'findByRegion').mockResolvedValue([mockCountry]);
+      const result = await service.findCountriesByRegion('Americas', undefined, ResponseType.SIMPLE);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveProperty('id');
+      expect(result[0]).not.toHaveProperty('nationality');
+    });
+  });
+
+  describe('findCountriesBySubregion', () => {
+    it('should return countries in the specified subregion', async () => {
+      jest.spyOn(repository, 'findBySubregion').mockResolvedValue([mockCountry]);
+
+      const result = await service.findCountriesBySubregion('South America');
+
+      expect(result).toHaveLength(1);
+      expect((result as CountryEntity[])[0].name).toBe('Chile');
+    });
+
+    it('should throw NO_CONTENT when not found', async () => {
+      jest.spyOn(repository, 'findBySubregion').mockResolvedValue([]);
+      await expectNoContent(() => service.findCountriesBySubregion('Unknown'));
+    });
+
+    it('should return SIMPLE countries', async () => {
+      jest.spyOn(repository, 'findBySubregion').mockResolvedValue([mockCountry]);
+      const result = await service.findCountriesBySubregion('South America', undefined, ResponseType.SIMPLE);
+      expect(result).toHaveLength(1);
+      expect(result[0]).not.toHaveProperty('nationality');
+    });
+  });
+
+  describe('findCountryByTerm – SIMPLE type', () => {
+    it('should return a simple country when type is SIMPLE', async () => {
+      jest.spyOn(repository, 'findByTerm').mockResolvedValue(mockCountry);
+      const result = await service.findCountryByTerm('Chile', undefined, ResponseType.SIMPLE);
+      expect(result).toHaveProperty('id');
+      expect(result).not.toHaveProperty('nationality');
+    });
   });
 
   describe('findStateById', () => {
@@ -140,9 +180,40 @@ describe('CountriesService', () => {
     });
   });
 
+  describe('findCityById', () => {
+    it('should return a city when found', async () => {
+      const mockCity = {
+        id: 21553,
+        name: 'Calama',
+        state_code: 'AN',
+        country_code: 'CL',
+        latitude: -22.46,
+        longitude: -68.93,
+        wikiDataId: 'Q53747',
+      };
+      jest.spyOn(repository, 'findCityById').mockResolvedValue(mockCity);
+
+      const result = await service.findCityById(21553);
+      expect(result.name).toBe('Calama');
+    });
+
+    it('should throw NO_CONTENT when not found', async () => {
+      jest.spyOn(repository, 'findCityById').mockResolvedValue(null);
+      await expectNoContent(() => service.findCityById(9999));
+    });
+  });
+
   describe('search', () => {
     it('should throw BAD_REQUEST for short query', async () => {
       await expect(service.search('A')).rejects.toThrow(HttpException);
+    });
+
+    it('should throw BAD_REQUEST for empty query', async () => {
+      await expect(service.search('')).rejects.toThrow(HttpException);
+    });
+
+    it('should throw BAD_REQUEST for whitespace-only query', async () => {
+      await expect(service.search('  ')).rejects.toThrow(HttpException);
     });
 
     it('should delegate to repository', async () => {

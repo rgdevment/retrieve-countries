@@ -1,8 +1,4 @@
-import {
-  CityEntity,
-  CountryEntity,
-  StateEntity,
-} from '../../src/modules/countries/entities';
+import { CityEntity, CountryEntity, StateEntity } from '../../src/modules/countries/entities';
 
 export const MOCK_CITY: CityEntity = {
   id: 21553,
@@ -35,9 +31,7 @@ export const MOCK_STATE_NO_CITIES: StateEntity = {
   cities: [],
 };
 
-export function mockCountryEntity(
-  overrides?: Partial<CountryEntity>,
-): CountryEntity {
+export function mockCountryEntity(overrides?: Partial<CountryEntity>): CountryEntity {
   return {
     id: 44,
     name: 'Chile',
