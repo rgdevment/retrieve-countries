@@ -150,7 +150,7 @@ jobs:
           name: coverage
           path: coverage/
 
-      - uses: SonarSource/sonarcloud-github-action@v4
+      - uses: SonarSource/sonarqube-scan-action@v7
         with:
           args: >
             -Dsonar.projectKey=${{ secrets.SONAR_KEY_RC }}
@@ -158,6 +158,5 @@ jobs:
             -Dsonar.sources=src
             -Dsonar.tests=test
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-            -Dsonar.host.url=https://sonarcloud.io
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_RC }}

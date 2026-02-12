@@ -1,13 +1,15 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { CountryCacheService } from '../../../src/modules/countries/cache';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
 import { ExcludeOption, ResponseType } from '../../../src/modules/countries/dto/country-query.dto';
-import { CountryEntity, CountrySimpleEntity } from '../../../src/modules/countries/entities';
+import { CountryEntity } from '../../../src/modules/countries/entities';
 import { CountryRepository } from '../../../src/modules/countries/repositories/country.repository.interface';
 
 describe('CountriesService', () => {
   let service: CountriesService;
   let repository: CountryRepository;
+  let cache: CountryCacheService;
 
   const mockCountry: CountryEntity = {
     id: 44,
@@ -65,11 +67,18 @@ describe('CountriesService', () => {
             search: jest.fn(),
           },
         },
+        {
+          provide: CountryCacheService,
+          useValue: {
+            getAll: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<CountriesService>(CountriesService);
     repository = module.get<CountryRepository>('CountryRepository');
+    cache = module.get<CountryCacheService>(CountryCacheService);
   });
 
   const expectNoContent = async (fn: () => Promise<unknown>) => {
@@ -77,78 +86,43 @@ describe('CountriesService', () => {
     await expect(fn()).rejects.toMatchObject({ status: HttpStatus.NO_CONTENT });
   };
 
-  describe('findAllCountries', () => {
-    it('should return mapped country DTOs with states', async () => {
-      jest.spyOn(repository, 'findAll').mockResolvedValue([mockCountry]);
+  describe('findAllCountriesGzip', () => {
+    it('should return gzip buffer with count', () => {
+      const mockEntry = { gzip: Buffer.from('test'), count: 1 };
+      jest.spyOn(cache, 'getAll').mockReturnValue(mockEntry);
 
-      const result = await service.findAllCountries();
+      const result = service.findAllCountriesGzip();
 
-      expect(result).toHaveLength(1);
-      const country = (result as CountryEntity[])[0];
-      expect(country.name).toBe('Chile');
-      expect(country.iso2).toBe('CL');
-      expect(country.currency.code).toBe('CLP');
-      expect(country.emoji).toBe('🇨🇱');
-      expect(country.states).toHaveLength(1);
-      expect(country.states[0].name).toBe('Antofagasta');
+      expect(result).toBe(mockEntry);
+      expect(result.count).toBe(1);
     });
 
-    it('should throw NO_CONTENT when empty', async () => {
-      jest.spyOn(repository, 'findAll').mockResolvedValue([]);
-      await expectNoContent(() => service.findAllCountries());
+    it('should throw NO_CONTENT when cache is null', () => {
+      jest.spyOn(cache, 'getAll').mockReturnValue(null);
+      expect(() => service.findAllCountriesGzip()).toThrow(HttpException);
     });
 
-    it('should include simple states and cities when type=simple', async () => {
-      jest.spyOn(repository, 'findAll').mockResolvedValue([mockCountry]);
-
-      const result = await service.findAllCountries(undefined, ResponseType.SIMPLE);
-
-      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: true, includeCities: true });
-      const country = (result as CountrySimpleEntity[])[0];
-      expect(country).toEqual({
-        id: 44,
-        name: 'Chile',
-        iso2: 'CL',
-        emoji: '🇨🇱',
-        states: [{ id: 2113, name: 'Antofagasta', iso2: 'AN', cities: [] }],
-      });
+    it('should throw NO_CONTENT when cache count is 0', () => {
+      jest.spyOn(cache, 'getAll').mockReturnValue({ gzip: Buffer.alloc(0), count: 0 });
+      expect(() => service.findAllCountriesGzip()).toThrow(HttpException);
     });
 
-    it('should exclude cities but keep states when type=simple and exclude=cities', async () => {
-      jest.spyOn(repository, 'findAll').mockResolvedValue([mockCountry]);
+    it('should pass type and exclude to cache', () => {
+      const mockEntry = { gzip: Buffer.from('test'), count: 1 };
+      jest.spyOn(cache, 'getAll').mockReturnValue(mockEntry);
 
-      const result = await service.findAllCountries(ExcludeOption.CITIES, ResponseType.SIMPLE);
+      service.findAllCountriesGzip(ExcludeOption.CITIES, ResponseType.SIMPLE);
 
-      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: true, includeCities: false });
-      const country = (result as CountrySimpleEntity[])[0];
-      expect(country.states).toHaveLength(1);
-      expect(country.states[0].cities).toHaveLength(0);
+      expect(cache.getAll).toHaveBeenCalledWith(ResponseType.SIMPLE, ExcludeOption.CITIES);
     });
 
-    it('should exclude states and cities when type=simple and exclude=states', async () => {
-      jest.spyOn(repository, 'findAll').mockResolvedValue([{ ...mockCountry, states: [] }]);
+    it('should pass exclude=states to cache', () => {
+      const mockEntry = { gzip: Buffer.from('test'), count: 1 };
+      jest.spyOn(cache, 'getAll').mockReturnValue(mockEntry);
 
-      const result = await service.findAllCountries(ExcludeOption.STATES, ResponseType.SIMPLE);
+      service.findAllCountriesGzip(ExcludeOption.STATES);
 
-      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: false, includeCities: false });
-      const country = (result as CountrySimpleEntity[])[0];
-      expect(country.states).toHaveLength(0);
-    });
-
-    it('should respect exclude=cities without type (full response)', async () => {
-      jest.spyOn(repository, 'findAll').mockResolvedValue([mockCountry]);
-
-      await service.findAllCountries(ExcludeOption.CITIES);
-
-      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: true, includeCities: false });
-    });
-
-    it('should respect exclude=states without type (full response)', async () => {
-      jest.spyOn(repository, 'findAll').mockResolvedValue([{ ...mockCountry, states: [] }]);
-
-      await service.findAllCountries(ExcludeOption.STATES);
-
-      expect(repository.findAll).toHaveBeenCalledWith({ includeStates: false, includeCities: false });
+      expect(cache.getAll).toHaveBeenCalledWith(undefined, ExcludeOption.STATES);
     });
   });
 

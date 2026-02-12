@@ -15,7 +15,6 @@ export const DatabaseProvider: Provider = {
 
     const native = new BetterSqlite3(dbPath);
 
-    // SQLite pragmas from .env
     native.pragma(`journal_mode = ${config.getOrThrow('SQLITE_JOURNAL_MODE')}`);
     native.pragma('foreign_keys = ON');
     native.pragma(`busy_timeout = ${config.getOrThrow('SQLITE_BUSY_TIMEOUT')}`);

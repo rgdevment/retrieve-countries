@@ -1,6 +1,8 @@
 import { CacheInterceptor } from '@nestjs/cache-manager';
-import { Controller, Get, HttpCode, HttpStatus, Param, Query, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Query, Res, UseInterceptors } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiExtraModels, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags, getSchemaPath } from '@nestjs/swagger';
+import { Response } from 'express';
 import { CountriesService } from './countries.service';
 import { CitySimpleDto } from './dto/city-simple.dto';
 import { ExcludeOption, ResponseType } from './dto/country-query.dto';
@@ -14,7 +16,14 @@ import { CountryEntity, CountrySimpleEntity } from './entities';
 @UseInterceptors(CacheInterceptor)
 @ApiExtraModels(CountryDto, CountrySimpleDto, StateSimpleDto, CitySimpleDto)
 export class CountriesController {
-  constructor(private readonly service: CountriesService) {}
+  private readonly maxAgeSec: number;
+
+  constructor(
+    private readonly service: CountriesService,
+    private readonly config: ConfigService,
+  ) {
+    this.maxAgeSec = Math.floor(this.config.getOrThrow<number>('CACHE_TTL') / 1000);
+  }
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -58,11 +67,17 @@ export class CountriesController {
     },
   })
   @ApiResponse({ status: 204, description: 'No countries found.' })
-  async findAll(
-    @Query('exclude') exclude?: ExcludeOption,
-    @Query('type') type?: ResponseType,
-  ): Promise<CountryEntity[] | CountrySimpleEntity[]> {
-    return this.service.findAllCountries(exclude, type);
+  findAll(@Query('exclude') exclude?: ExcludeOption, @Query('type') type?: ResponseType, @Res() res?: Response): void {
+    const { gzip } = this.service.findAllCountriesGzip(exclude, type);
+
+    res!
+      .set({
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip',
+        'Cache-Control': `public, max-age=${this.maxAgeSec}`,
+      })
+      .status(HttpStatus.OK)
+      .send(gzip);
   }
 
   @Get('region/:name')

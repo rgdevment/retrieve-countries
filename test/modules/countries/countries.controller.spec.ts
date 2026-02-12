@@ -1,6 +1,8 @@
 import { CacheModule } from '@nestjs/cache-manager';
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import { gzipSync } from 'zlib';
 import { CountriesController } from '../../../src/modules/countries/countries.controller';
 import { CountriesService } from '../../../src/modules/countries/countries.service';
 import { CountryEntity } from '../../../src/modules/countries/entities';
@@ -67,13 +69,19 @@ describe('CountriesController', () => {
         {
           provide: CountriesService,
           useValue: {
-            findAllCountries: jest.fn(),
+            findAllCountriesGzip: jest.fn(),
             findCountryByTerm: jest.fn(),
             findCountriesByRegion: jest.fn(),
             findCountriesBySubregion: jest.fn(),
             findStateById: jest.fn(),
             findCityById: jest.fn(),
             search: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            getOrThrow: jest.fn().mockReturnValue(60000),
           },
         },
       ],
@@ -84,19 +92,36 @@ describe('CountriesController', () => {
   });
 
   describe('findAll', () => {
-    it('should return all countries with states and cities', async () => {
-      jest.spyOn(service, 'findAllCountries').mockResolvedValue([mockCountryDto]);
+    const mockRes = () => {
+      const res: any = {};
+      res.set = jest.fn().mockReturnValue(res);
+      res.status = jest.fn().mockReturnValue(res);
+      res.send = jest.fn().mockReturnValue(res);
+      return res;
+    };
 
-      const result = await controller.findAll();
+    it('should send gzip-compressed response with correct headers', () => {
+      const gzip = gzipSync(JSON.stringify([mockCountryDto]));
+      jest.spyOn(service, 'findAllCountriesGzip').mockReturnValue({ gzip, count: 1 });
 
-      expect(result).toEqual([mockCountryDto]);
-      expect((result as CountryEntity[])[0].states).toHaveLength(1);
-      expect((result as CountryEntity[])[0].states[0].cities).toHaveLength(1);
+      const res = mockRes();
+      controller.findAll(undefined, undefined, res);
+
+      expect(res.set).toHaveBeenCalledWith({
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip',
+        'Cache-Control': 'public, max-age=60',
+      });
+      expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(res.send).toHaveBeenCalledWith(gzip);
     });
 
-    it('should propagate NO_CONTENT', async () => {
-      jest.spyOn(service, 'findAllCountries').mockRejectedValue(new HttpException('No content', HttpStatus.NO_CONTENT));
-      await expect(controller.findAll()).rejects.toThrow(HttpException);
+    it('should propagate NO_CONTENT', () => {
+      jest.spyOn(service, 'findAllCountriesGzip').mockImplementation(() => {
+        throw new HttpException('No content', HttpStatus.NO_CONTENT);
+      });
+      const res = mockRes();
+      expect(() => controller.findAll(undefined, undefined, res)).toThrow(HttpException);
     });
   });
 

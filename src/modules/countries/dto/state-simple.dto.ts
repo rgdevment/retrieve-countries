@@ -1,9 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { CitySimpleDto } from './city-simple.dto';
 
-/**
- * Lightweight state representation returned when `?type=simple`.
- */
 export class StateSimpleDto {
   @ApiProperty({ example: 2113, description: 'Unique identifier' })
   readonly id!: number;

@@ -1,11 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { StateSimpleDto } from './state-simple.dto';
 
-/**
- * Lightweight country representation for dropdown/select use cases.
- * Returned when `?type=simple` is specified.
- * States and cities are still included (as simple objects) unless explicitly excluded.
- */
 export class CountrySimpleDto {
   @ApiProperty({ example: 44, description: 'Unique identifier' })
   readonly id!: number;

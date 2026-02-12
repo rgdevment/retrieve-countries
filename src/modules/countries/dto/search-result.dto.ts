@@ -1,7 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-// ── Individual search-result items ──────────────────────────
-
 export class CountrySearchItemDto {
   @ApiProperty({ example: 44 })
   readonly id!: number;
@@ -49,8 +47,6 @@ export class CitySearchItemDto {
   @ApiProperty({ example: 'CL' })
   readonly country_iso2!: string;
 }
-
-// ── Aggregated search response ──────────────────────────────
 
 export class SearchResultDto {
   @ApiProperty({ type: [CountrySearchItemDto], description: 'Matching countries' })
