@@ -53,11 +53,11 @@ RUN npm ci --omit=dev \
 # SQLite data directory
 RUN mkdir -p /app/data && chown -R app:app /app
 
-USER app
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# 1) Ensure indexes (read-write), then 2) start server (readonly)
-ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["sh", "-c", "node dist/database/ensure-indexes.js && node dist/main"]
+# Entrypoint: fix perms → ensure indexes → start server as 'app'
+ENTRYPOINT ["/sbin/tini", "--", "docker-entrypoint.sh"]
