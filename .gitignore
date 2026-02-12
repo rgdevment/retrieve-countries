@@ -2,15 +2,11 @@
 /dist
 /node_modules
 /build
-
+!docker-compose*.yml
 # Logs
 logs
 *.log
 npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
 
 # OS
 .DS_Store
@@ -23,7 +19,6 @@ lerna-debug.log*
 /.idea
 .project
 .classpath
-.c9/
 *.launch
 .settings/
 *.sublime-workspace
@@ -52,21 +47,10 @@ pids
 *.seed
 *.pid.lock
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-# Yarn Plug'n'Play
-.pnp.*
-.yarn/*
-/.yarn/*
-!.yarn/patches
-!.yarn/releases
-!.yarn/plugins
-!.yarn/sdks
-!.yarn/versions
-
-# Optional to include Yarn berry cache directory
-.cache/yarn
-
-# SonarQube
-/.sonar/
+# SQLite database files (temporary/runtime)
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm

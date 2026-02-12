@@ -1,17 +1,24 @@
 services:
-  retrieve-countries:
-    build: ./
+  api:
+    build:
+      context: .
+      target: production
     container_name: retrieve-countries
     restart: unless-stopped
     env_file:
       - .env
-    networks:
-      - internal-net
-    environment:
-      - NODE_ENV=production
-    expose:
-      - 3000
-
-networks:
-  internal-net:
-    external: true
+    volumes:
+      - ./data:/app/data # SQLite DB from host
+    ports:
+      - '${PORT:-3000}:3000'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/v1/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'

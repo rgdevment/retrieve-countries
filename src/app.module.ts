@@ -1,17 +1,9 @@
+import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
-import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
-import { HeaderResolver, I18nModule } from 'nestjs-i18n';
 import { CommonModule } from './common/common.module';
+import { DatabaseModule } from './database';
 import { CountriesModule } from './modules/countries/countries.module';
-import { CitiesModule } from './modules/cities/cities.module';
-import { StatesModule } from './modules/states/states.module';
-import { ConfigurationModule } from './configuration/configuration.module';
-import { CommandsModule } from './command/command.module';
-import { PrometheusModule } from '@willsoto/nestjs-prometheus';
-import { collectDefaultMetrics, Registry } from 'prom-client';
-import { HealthController } from './common/controller/health.controller';
 
 @Module({
   imports: [
@@ -19,39 +11,17 @@ import { HealthController } from './common/controller/health.controller';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-      }),
+    CacheModule.registerAsync({
+      isGlobal: true,
       inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        ttl: config.getOrThrow<number>('CACHE_TTL'),
+        max: config.getOrThrow<number>('CACHE_MAX'),
+      }),
     }),
-    I18nModule.forRoot({
-      fallbackLanguage: 'es',
-      loaderOptions: {
-        path: join(__dirname, '/resources/i18n/'),
-        watch: false,
-      },
-      resolvers: [new HeaderResolver([])],
-    }),
-    PrometheusModule.register(),
+    DatabaseModule,
     CommonModule,
     CountriesModule,
-    CitiesModule,
-    StatesModule,
-    ConfigurationModule,
-    CommandsModule,
-  ],
-  controllers: [HealthController],
-  providers: [
-    {
-      provide: 'PrometheusRegistry',
-      useValue: (() => {
-        const registry = new Registry();
-        collectDefaultMetrics({ register: registry });
-        return registry;
-      })(),
-    },
   ],
 })
 export class AppModule {}

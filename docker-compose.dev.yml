@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: .
+      target: development
+    container_name: retrieve-countries-dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src # hot-reload source
+      - ./test:/app/test
+      - ./data:/app/data # SQLite DB from host
+    ports:
+      - '${PORT:-3000}:3000'

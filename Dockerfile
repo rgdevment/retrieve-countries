@@ -1,38 +1,57 @@
-# -----------------------
-# STAGE 1: Build NestJS App (with full deps)
-# -----------------------
-FROM --platform=linux/arm64 node:22-alpine AS builder
-
+# =============================================
+# BASE — shared layer for all stages
+# =============================================
+FROM node:24-alpine AS base
 WORKDIR /app
+COPY package.json package-lock.json ./
 
-# Copy dependency definitions and install everything (dev included for build)
-COPY package*.json ./
-RUN npm install --ignore-scripts
+# =============================================
+# DEVELOPMENT — hot-reload, full source mount
+# =============================================
+FROM base AS development
+ENV NODE_ENV=development
+RUN npm ci
+COPY . .
+CMD ["npm", "run", "start:dev"]
 
-# Copy source code and build
+# =============================================
+# BUILD — compile TypeScript only (used by prod)
+# =============================================
+FROM base AS build
+RUN npm ci
 COPY . .
 RUN npm run build
 
-# -----------------------
-# STAGE 2: Runtime (lightweight production image)
-# -----------------------
-FROM --platform=linux/arm64 node:22-alpine AS runner
+# =============================================
+# PRODUCTION — minimal, secure, distroless-ish
+# =============================================
+FROM node:24-alpine AS production
 
-# Use non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Security: no root, no shell attack surface
+RUN addgroup -S app && adduser -S app -G app \
+    && apk --no-cache add dumb-init \
+    && rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
-# Copy only what we need from builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
+# Copy only production artifacts
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/package-lock.json ./package-lock.json
 
-# Permissions and env
-RUN chown -R appuser:appgroup /app
-USER appuser
+# Install ONLY production deps
+RUN npm ci --omit=dev --ignore-scripts \
+    && npm cache clean --force \
+    && rm -rf /tmp/*
+
+# SQLite data directory
+RUN mkdir -p /app/data && chown -R app:app /app
+
+USER app
 
 ENV NODE_ENV=production
 EXPOSE 3000
 
+# dumb-init handles PID 1 properly (signal forwarding)
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/main"]

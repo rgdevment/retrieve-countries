@@ -1,82 +1,262 @@
-# Retrieve Countries (Legacy)
+# Retrieve Countries API
 
-## ⚠️ Este repositorio ha sido migrado y archivado
+Hierarchical REST API for querying countries, states/regions, and cities worldwide. Includes Smart Resolve, accent/case-insensitive search, hierarchy control, and a lightweight dropdown mode.
 
-Este proyecto ha sido **migrado y mejorado** como parte de una transición hacia una arquitectura más estable y mantenible:
+**Base URL:** `https://countries.apirest.cl/v1`
 
-- La base de datos fue migrada desde **MongoDB a MariaDB**, permitiendo mejores relaciones y rendimiento.
-- El servicio se integró en un **monorepo consolidado** junto a otros proyectos de datos abiertos.
-- Ahora se ejecuta en un **servidor propio más estable**, lo que permite mantener los servicios disponibles de forma **gratuita y continua** para la comunidad.
+## Endpoints
 
-👉 El nuevo repositorio actualizado se encuentra en:  
-🔗 [open-data-service/apps/countries](https://github.com/rgdevment/open-data-service/tree/main/apps/countries)
+### Countries
 
-> Este repositorio permanecerá como referencia histórica, pero **no recibirá más actualizaciones**.
+#### List all countries
 
-[![Build CI](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml/badge.svg)](https://github.com/rgdevment/retrieve-countries/actions/workflows/main.yml)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=rgdevment_retrieve-countries&metric=coverage)](https://sonarcloud.io/dashboard?id=rgdevment_retrieve-countries)
-[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=rgdevment_retrieve-countries&metric=alert_status)](https://sonarcloud.io/dashboard?id=rgdevment_retrieve-countries)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+```
+GET /v1/
+```
 
-Retrieve Countries es una API REST de código abierto bajo la licencia MIT que te permite consultar datos sobre países, ciudades y otra información relevante en todo el mundo. Esta API está en continuo desarrollo y crecimiento.
+```bash
+curl https://countries.apirest.cl/v1/
+```
 
-El mantenimiento de este repositorio se ha movido a: [open-data-service/apps/countries](https://github.com/rgdevment/open-data-service/tree/main/apps/countries)
+#### Smart Resolve — find a country by ID, ISO code, or name
 
-## Disponible en otros idiomas:
-- [English (Inglés)](https://github.com/rgdevment/open-data-service/blob/main/apps/countries/README.md)
+Automatically resolves the `:term` parameter using the best matching strategy:
 
-## Documentación
+| Format   | Example | Strategy                              |
+| -------- | ------- | ------------------------------------- |
+| Numeric  | `44`    | Lookup by ID                          |
+| 2 chars  | `CL`    | Lookup by ISO2 code                   |
+| 3 chars  | `CHL`   | Lookup by ISO3 code                   |
+| Anything | `Chile` | Name search (accent/case-insensitive) |
 
-- [Documentación Swagger](https://countries.apirest.cl/v1/docs)
+```
+GET /v1/:term
+```
 
-## Ejemplos de uso
+```bash
+# By ISO2 code
+curl https://countries.apirest.cl/v1/CL
 
-Puedes obtener información sobre un país y sus ciudades con esta simple llamada:
+# By ISO3 code
+curl https://countries.apirest.cl/v1/CHL
 
-	curl -X GET "https://countries.apirest.cl/v1/chile"
+# By numeric ID
+curl https://countries.apirest.cl/v1/44
 
-O, si lo prefieres, puedes obtener todos los países de una región específica:
+# By name (accent/case-insensitive)
+curl https://countries.apirest.cl/v1/chile
+```
 
-	curl -X GET "https://countries.apirest.cl/v1/region/americas"
+#### Filter by region (continent)
 
-Incluso puedes obtener todos los países del mundo con una sola petición:
+```
+GET /v1/region/:name
+```
 
-	curl -X GET "https://countries.apirest.cl/v1/all"
+```bash
+curl https://countries.apirest.cl/v1/region/Americas
+curl https://countries.apirest.cl/v1/region/Europe
+curl https://countries.apirest.cl/v1/region/Asia
+```
 
-También puedes mostrar u ocultar información adicional con los siguientes **parámetros opcionales**:
+#### Filter by subregion
 
-- `excludeCities` (opcional): booleano
-- `excludeStates` (opcional): booleano
+```
+GET /v1/subregion/:name
+```
 
-Para más información y otros endpoints, consulta la Documentación en Postman o Swagger.
+```bash
+curl "https://countries.apirest.cl/v1/subregion/South%20America"
+curl "https://countries.apirest.cl/v1/subregion/Western%20Europe"
+```
 
-## Instrucciones para instalación local
+### States
 
-Si quieres probar el proyecto localmente o montarlo en tu propio entorno, sigue estos pasos.
+#### Get a state/region by ID
 
-### Requisitos
+Returns the state with its cities by default.
 
-- **Node.js**: 20.x LTS
-- **Yarn**: 4.4
+```
+GET /v1/states/:id
+```
 
-### Instalación
+```bash
+# Antofagasta region (Chile)
+curl https://countries.apirest.cl/v1/states/2113
 
-1. Clona el repositorio:
-    - git clone https://github.com/rgdevment/retrieve-countries
-    - cd retrieve-countries
+# Without cities
+curl "https://countries.apirest.cl/v1/states/2113?exclude=cities"
+```
 
-2. Instala las dependencias:
-    - yarn install
+### Cities
 
-3. Configura las variables de entorno:
-    - cp .env.example .env
-    - Edita el archivo `.env` con tus propios valores.
+#### Get a city by ID
 
-4. Ejecuta el proyecto:
-    - yarn start:dev
+```
+GET /v1/cities/:id
+```
 
-Este comando levantará la API en un entorno de desarrollo.
+```bash
+# Calama (Antofagasta, Chile)
+curl https://countries.apirest.cl/v1/cities/21553
+```
 
-## Licencia
+### Search
 
-Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+#### Global search across countries, states, and cities
+
+Performs a simultaneous accent/case-insensitive search. Returns results grouped by type (up to 20 per category). Minimum 2 characters.
+
+```
+GET /v1/search?q=:query
+```
+
+```bash
+curl "https://countries.apirest.cl/v1/search?q=Santiago"
+curl "https://countries.apirest.cl/v1/search?q=Berlin"
+```
+
+## Query Parameters
+
+All country endpoints support these optional query parameters:
+
+### `exclude` — hierarchy depth
+
+Controls how deep the response tree goes. By default the full tree is returned (country → states → cities).
+
+| Value              | Result                                   |
+| ------------------ | ---------------------------------------- |
+| _(empty, default)_ | Full tree: country + states + cities     |
+| `cities`           | Country + states only (cities omitted)   |
+| `states`           | Country only (states and cities omitted) |
+
+```bash
+# Country + states, no cities
+curl "https://countries.apirest.cl/v1/CL?exclude=cities"
+
+# Country only, no children
+curl "https://countries.apirest.cl/v1/CL?exclude=states"
+```
+
+### `type` — response detail level
+
+Controls how many fields each country object contains.
+
+| Value              | Result                                               |
+| ------------------ | ---------------------------------------------------- |
+| _(empty, default)_ | All fields (region, subregion, currency, timezones…) |
+| `simple`           | Only `id`, `name`, `iso2`, `emoji`                   |
+
+```bash
+# Lightweight list for a dropdown/select
+curl "https://countries.apirest.cl/v1/?exclude=states&type=simple"
+```
+
+**Simple response shape:**
+
+```json
+[
+  { "id": 44, "name": "Chile", "iso2": "CL", "emoji": "🇨🇱" },
+  { "id": 11, "name": "Argentina", "iso2": "AR", "emoji": "🇦🇷" }
+]
+```
+
+## Response Examples
+
+### Country (full)
+
+```bash
+curl https://countries.apirest.cl/v1/CL
+```
+
+```json
+{
+  "id": 44,
+  "name": "Chile",
+  "iso2": "CL",
+  "iso3": "CHL",
+  "numeric_code": "152",
+  "capital": "Santiago",
+  "phonecode": "+56",
+  "tld": ".cl",
+  "native": "Chile",
+  "nationality": "Chilean",
+  "region": { "id": 2, "name": "Americas" },
+  "subregion": { "id": 8, "name": "South America" },
+  "latitude": -35.6751,
+  "longitude": -71.543,
+  "emoji": "🇨🇱",
+  "emojiU": "U+1F1E8 U+1F1F1",
+  "timezones": [{ "zoneName": "America/Punta_Arenas", "gmtOffset": -10800, "abbreviation": "..." }],
+  "translations": { "es": "Chile", "fr": "Chili", "de": "Chile" },
+  "currency": { "name": "Chilean peso", "code": "CLP", "symbol": "$" },
+  "states": [
+    {
+      "id": 2113,
+      "name": "Antofagasta",
+      "iso2": "AN",
+      "type": "region",
+      "cities": [{ "id": 21553, "name": "Calama", "latitude": -22.46, "longitude": -68.93 }]
+    }
+  ]
+}
+```
+
+### Search
+
+```bash
+curl "https://countries.apirest.cl/v1/search?q=Santiago"
+```
+
+```json
+{
+  "countries": [],
+  "states": [
+    { "id": 2832, "name": "Santiago Metropolitan", "iso2": "RM", "country_name": "Chile", "country_iso2": "CL" }
+  ],
+  "cities": [
+    {
+      "id": 21553,
+      "name": "Santiago",
+      "state_name": "Santiago Metropolitan",
+      "country_name": "Chile",
+      "country_iso2": "CL"
+    }
+  ]
+}
+```
+
+## Health Check
+
+```
+GET /health
+```
+
+```bash
+curl https://countries.apirest.cl/health
+```
+
+> The health endpoint is outside the `/v1` prefix.
+
+## Swagger / OpenAPI
+
+Interactive API documentation is available at [`/docs`](https://countries.apirest.cl/docs) when the application is running.
+
+## Tech Stack
+
+| Layer     | Technology                          |
+| --------- | ----------------------------------- |
+| Framework | NestJS 11                           |
+| Language  | TypeScript 5.9                      |
+| Database  | SQLite (better-sqlite3 + Kysely)    |
+| Cache     | In-memory (`@nestjs/cache-manager`) |
+| Runtime   | Node.js >= 22, npm >= 11            |
+
+## License
+
+This project is licensed under the **GNU General Public License v3.0** (GPL-3.0-only).
+See [LICENSE](LICENSE) for details.
+
+## Acknowledgements
+
+This project uses data from [Countries, States, Cities Database](https://github.com/dr5hn/countries-states-cities-database) by [dr5hn](https://github.com/dr5hn), licensed under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/).

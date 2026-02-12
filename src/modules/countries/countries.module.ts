@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
+import { CitiesController } from './cities.controller';
 import { CountriesController } from './countries.controller';
 import { CountriesService } from './countries.service';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Country, CountrySchema } from '../../common/schemas/country.schema';
-import { CountryRepositoryMongo } from './repositories/country.repository';
+import { CountryRepositorySqlite } from './repositories/country.repository';
+import { SearchController } from './search.controller';
+import { StatesController } from './states.controller';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Country.name, schema: CountrySchema }])],
-  providers: [CountriesService, { provide: 'CountryRepository', useClass: CountryRepositoryMongo }],
-  controllers: [CountriesController],
+  providers: [CountriesService, { provide: 'CountryRepository', useClass: CountryRepositorySqlite }],
+  controllers: [StatesController, CitiesController, SearchController, CountriesController],
 })
 export class CountriesModule {}

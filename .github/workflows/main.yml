@@ -1,76 +1,163 @@
-name: Build CI
+name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '24'
 
 jobs:
+  # ── Install & cache ──────────────────────────────────────────
+  install:
+    name: Install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/cache/save@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+  # ── Lint (ESLint) ────────────────────────────────────────────
   lint:
     name: Lint
+    needs: install
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20.15'
+          node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install dependencies
-        run: npm install
+      - uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
-      - name: Run lint
-        run: npm run lint
+      - run: npm run lint
 
+  # ── Format (Prettier) ───────────────────────────────────────
+  format:
+    name: Format
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npm run format:check
+
+  # ── Type check (tsc --noEmit) ────────────────────────────────
+  typecheck:
+    name: Typecheck
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npm run typecheck
+
+  # ── Build ────────────────────────────────────────────────────
+  build:
+    name: Build
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npm run build
+
+  # ── Tests + Coverage ─────────────────────────────────────────
   test:
     name: Tests
+    needs: install
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20.15'
+          node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install dependencies
-        run: npm install
+      - uses: actions/cache/restore@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
-      - name: Run tests
-        run: npm run test
+      - run: npm run test:cov
 
-      - name: Prepare coverage report for SonarQube
-        run: |
-          mv coverage/lcov-report coverage/sonar
-          mv coverage/lcov.info coverage/sonar/lcov.info
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
 
+  # ── SonarCloud (reuses coverage artifact) ────────────────────
   sonarcloud:
-    name: Sonar
+    name: SonarCloud
+    needs: test
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
-        run: npm install
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
 
-      - name: Run tests and collect coverage
-        run: npm run test --coverage
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v3
+      - uses: SonarSource/sonarcloud-github-action@v4
         with:
           args: >
             -Dsonar.projectKey=${{ secrets.SONAR_KEY_RC }}
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
-            -Dsonar.sources=.
+            -Dsonar.sources=src
+            -Dsonar.tests=test
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
             -Dsonar.host.url=https://sonarcloud.io
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_RC }}
