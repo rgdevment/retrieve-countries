@@ -1,14 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Kysely } from 'kysely';
 import { CountryRow, Database, DATABASE_TOKEN } from '../../../database';
-import {
-  CityEntity,
-  CountryEntity,
-  CountrySimpleEntity,
-  RegionEntity,
-  StateEntity,
-  SubregionEntity,
-} from '../entities';
+import { CityEntity, CountryEntity, RegionEntity, StateEntity, SubregionEntity } from '../entities';
 import { bestMatch, normalize } from '../helpers/normalize';
 import {
   toCityEntity,
@@ -39,13 +32,7 @@ import {
   selectStatesByCountryIds,
   StateSearchRow,
 } from '../queries/country.queries';
-import {
-  CitySearchItem,
-  CountryRepository,
-  HierarchyOptions,
-  SearchResult,
-  StateSearchItem,
-} from './country.repository.interface';
+import { CountryRepository, HierarchyOptions, SearchResult } from './country.repository.interface';
 
 @Injectable()
 export class CountryRepositorySqlite implements CountryRepository {
@@ -68,8 +55,8 @@ export class CountryRepositorySqlite implements CountryRepository {
   }
 
   async findByTerm(term: string, options: HierarchyOptions): Promise<CountryEntity | null> {
-    const numId = parseInt(term, 10);
-    if (!isNaN(numId) && String(numId) === term) {
+    const numId = Number.parseInt(term, 10);
+    if (!Number.isNaN(numId) && String(numId) === term) {
       const row = await selectCountryById(this.db, numId);
       if (row) return this.assembleCountry(row, options);
       return null;
@@ -137,46 +124,52 @@ export class CountryRepositorySqlite implements CountryRepository {
     const q = normalize(query);
     if (!q) return { countries: [], states: [], cities: [] };
 
-    const countries: CountrySimpleEntity[] = [];
-    for (const c of data.countries) {
-      if (countries.length >= limit) break;
-      if (normalize(c.name).includes(q)) {
-        countries.push({ id: c.id, name: c.name, iso2: c.iso2 ?? '', emoji: c.emoji ?? '', states: [] });
-      }
-    }
+    const countries = this.filterByName(data.countries, q, limit, c => ({
+      id: c.id,
+      name: c.name,
+      iso2: c.iso2 ?? '',
+      emoji: c.emoji ?? '',
+      states: [],
+    }));
 
-    const states: StateSearchItem[] = [];
-    for (const s of data.states) {
-      if (states.length >= limit) break;
-      if (normalize(s.name).includes(q)) {
-        const country = data.countryLookup.get(s.country_id);
-        states.push({
-          id: s.id,
-          name: s.name,
-          iso2: s.iso2 ?? '',
-          country_name: country?.name ?? '',
-          country_iso2: country?.iso2 ?? '',
-        });
-      }
-    }
+    const states = this.filterByName(data.states, q, limit, s => {
+      const country = data.countryLookup.get(s.country_id);
+      return {
+        id: s.id,
+        name: s.name,
+        iso2: s.iso2 ?? '',
+        country_name: country?.name ?? '',
+        country_iso2: country?.iso2 ?? '',
+      };
+    });
 
-    const cities: CitySearchItem[] = [];
-    for (const c of data.cities) {
-      if (cities.length >= limit) break;
-      if (normalize(c.name).includes(q)) {
-        const country = data.countryLookup.get(c.country_id);
-        const state = data.stateLookup.get(c.state_id);
-        cities.push({
-          id: c.id,
-          name: c.name,
-          state_name: state?.name ?? '',
-          country_name: country?.name ?? '',
-          country_iso2: country?.iso2 ?? '',
-        });
-      }
-    }
+    const cities = this.filterByName(data.cities, q, limit, c => {
+      const country = data.countryLookup.get(c.country_id);
+      const state = data.stateLookup.get(c.state_id);
+      return {
+        id: c.id,
+        name: c.name,
+        state_name: state?.name ?? '',
+        country_name: country?.name ?? '',
+        country_iso2: country?.iso2 ?? '',
+      };
+    });
 
     return { countries, states, cities };
+  }
+
+  private filterByName<T extends { name: string }, R>(
+    items: T[],
+    q: string,
+    limit: number,
+    toResult: (item: T) => R,
+  ): R[] {
+    const results: R[] = [];
+    for (const item of items) {
+      if (results.length >= limit) break;
+      if (normalize(item.name).includes(q)) results.push(toResult(item));
+    }
+    return results;
   }
 
   private async assembleCountry(row: CountryRow, options: HierarchyOptions): Promise<CountryEntity> {
