@@ -2,6 +2,12 @@
 
 Hierarchical REST API for querying countries, states/regions, and cities worldwide. Includes Smart Resolve, accent/case-insensitive search, hierarchy control, and a lightweight dropdown mode.
 
+  <p>
+    <a href="https://buymeacoffee.com/rgdevment">
+      <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-☕-FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee"/>
+    </a>
+  </p>
+
 **Base URL:** `https://countries.apirest.cl/v1`
 
 ## Endpoints
