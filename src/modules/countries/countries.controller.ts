@@ -49,8 +49,8 @@ export class CountriesController {
     required: false,
     description:
       'Controls the detail level. ' +
-      '"simple": returns only id, name, iso2, and emoji (ideal for dropdowns). ' +
-      '"full" (default): returns all fields.',
+      '"simple" (default): returns only id, name, iso2, and emoji (ideal for dropdowns). ' +
+      '"full": returns all fields.',
   })
   @ApiResponse({
     status: 200,
@@ -67,7 +67,15 @@ export class CountriesController {
     },
   })
   @ApiResponse({ status: 204, description: 'No countries found.' })
+  @ApiResponse({ status: 302, description: 'Redirect to simple type when type parameter is not specified.' })
   findAll(@Query('exclude') exclude?: ExcludeOption, @Query('type') type?: ResponseType, @Res() res?: Response): void {
+    // Redirect to ?type=simple when type parameter is not specified
+    if (!type) {
+      const redirectUrl = exclude ? `?exclude=${exclude}&type=simple` : '?type=simple';
+      res!.redirect(302, redirectUrl);
+      return;
+    }
+
     const { gzip } = this.service.findAllCountriesGzip(exclude, type);
 
     res!
