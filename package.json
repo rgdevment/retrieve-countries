@@ -32,7 +32,7 @@
     "@nestjs/core": "^11.1.13",
     "@nestjs/platform-express": "^11.1.13",
     "@nestjs/swagger": "^11.2.6",
-    "better-sqlite3": "^12.6.2",
+    "better-sqlite3": "^12.8.0",
     "cache-manager": "^7.2.8",
     "compression": "^1.7.5",
     "kysely": "^0.28.11",
