@@ -35,7 +35,7 @@
     "better-sqlite3": "^12.6.2",
     "cache-manager": "^7.2.8",
     "compression": "^1.7.5",
-    "kysely": "^0.28.11",
+    "kysely": "^0.28.17",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
